@@ -26,6 +26,7 @@ from transformers import (
 )
 
 from peft import LoraConfig, TaskType, get_peft_model
+from peft.tuners import lora
 
 
 class Shell(nn.Module):
