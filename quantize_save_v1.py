@@ -15,6 +15,9 @@
 
 import argparse
 import os
+import functools
+from scipy.stats import norm
+from functools import partial
 
 import torch
 import torch.nn as nn
@@ -27,6 +30,7 @@ from transformers import (
 
 from peft import LoraConfig, TaskType, get_peft_model
 from peft.tuners import lora
+import bitsandbytes as bnb
 
 
 class Shell(nn.Module):
