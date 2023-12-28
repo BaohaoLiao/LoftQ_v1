@@ -226,7 +226,7 @@ def quantize_and_save():
             )
             res = (weight - dequantized_weight) / scaling
 
-            output = _low_rank_decomposition(res, reduced_rank=reduced_rank)
+            output = _low_rank_decomposition(res, reduced_rank=args.rank)
             L, R = output["L"], output["R"]
             res = weight - scaling * torch.mm(L, R)
 
