@@ -275,6 +275,7 @@ if __name__ == "__main__":
         logging.warning("Use the checkpoint in HF hub, stored in the `subfolder='gsm8k'` in target model.")
         adapter_dir_list = [None]
 
+    print(adapter_dir_list)
     for adapter_path in adapter_dir_list:
         model_args.adapter_name_or_path = adapter_path
         evaluation(model_args, data_args)
