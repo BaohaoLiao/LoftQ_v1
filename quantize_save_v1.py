@@ -258,7 +258,7 @@ def quantize_and_save():
     # Save LoftQ model
     model_name = args.model_name_or_path.split("/")[-1] + f"-{args.bits}bit" + f"-{args.rank}rank"
     base_model_dir = os.path.join(args.save_dir, model_name)
-    lora_model_dir = os.path.join(args.save_dir, model_name, "loft_init")
+    lora_model_dir = os.path.join(args.save_dir, model_name, "loftq_init")
 
     # save lora adapters first
     lora_model.base_model.peft_config[

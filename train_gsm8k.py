@@ -251,6 +251,7 @@ def train():
                                           is_trainable=True,
                                           token=model_args.token,
                                           )
+    logging.info(f"{model.print_trainable_parameters()}")
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
