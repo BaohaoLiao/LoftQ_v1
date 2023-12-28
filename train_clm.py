@@ -21,41 +21,43 @@ https://huggingface.co/models?filter=text-generation
 """
 # You can also adapt this script on your own causal language modeling task. Pointers for this are left as comments.
 
-import os
-import math
 import logging
+import math
+import os
 import sys
 import warnings
-from itertools import chain
 from dataclasses import dataclass, field
-
+from itertools import chain
 from typing import Optional
-import evaluate
 
 import datasets
+import evaluate
+import torch
 from datasets import load_dataset
 
 import transformers
 from transformers import (
+    CONFIG_MAPPING,
     MODEL_FOR_CAUSAL_LM_MAPPING,
-    HfArgumentParser,
-    Trainer,
-    TrainingArguments,
-    is_torch_tpu_available,
-    set_seed,
-    BitsAndBytesConfig,
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
+    HfArgumentParser,
+    Trainer,
+    TrainingArguments,
     default_data_collator,
+    is_torch_tpu_available,
+    set_seed,
 )
 from transformers.testing_utils import CaptureLogger
 from transformers.trainer_utils import get_last_checkpoint
+from transformers.utils import check_min_version, send_example_telemetry
 from transformers.utils.versions import require_version
-from transformers.utils import send_example_telemetry
 
-from peft import PeftModel
+from peft import PeftModel, get_peft_model, TaskType, LoraConfig
 
+# Will error if the minimal version of Transformers is not installed. Remove at your own risks.
+# check_min_version("4.37.0.dev0")
 
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt")
 
@@ -75,7 +77,7 @@ class ModelArguments:
         default=None,
         metadata={
             "help": (
-                "The model checkpoint for weights initialization.Don't set if you want to train a model from scratch."
+                "The model checkpoint for weights initialization. Don't set if you want to train a model from scratch."
             )
         },
     )
@@ -122,7 +124,7 @@ class ModelArguments:
     use_auth_token: bool = field(
         default=None,
         metadata={
-            "help": "The `use_auth_token` argument is deprecated and will be removed in v4.34. Please use `token`."
+            "help": "The `use_auth_token` argument is deprecated and will be removed in v4.34. Please use `token` instead."
         },
     )
     trust_remote_code: bool = field(
@@ -130,7 +132,7 @@ class ModelArguments:
         metadata={
             "help": (
                 "Whether or not to allow for custom models defined on the Hub in their own modeling files. This option"
-                "should only be set to `True` for repositories you trust and in which you have read the code, as it will"
+                "should only be set to `True` for repositories you trust and in which you have read the code, as it will "
                 "execute code present on the Hub on your local machine."
             )
         },
@@ -149,28 +151,37 @@ class ModelArguments:
         default=False,
         metadata={
             "help": (
-                "It is an option to create the model as an empty shell, then only materialize its parameters when the pretrained weights are loaded."
+                "It is an option to create the model as an empty shell, then only materialize its parameters when the pretrained weights are loaded. "
                 "set True will benefit LLM loading time and RAM consumption."
-            )
-        },
-    )
-    fake_quantization: bool = field(
-        default=False,
-        metadata={
-            "help": (
-                "True: load in fp16 instead of 4-bit or 2-bit. Parallel training requires fake quantization"
-                "False: load in NF4 by bitsandbytes. NF2 not implemented. Use NF4 to replace NF2"
             )
         },
     )
     adapter_name_or_path: Optional[str] = field(
         default=None,
-        metadata={
-            "help": (
-                "The LoRA adapter checkpoint. Set None if you want to fine-tune from LoftQ."
-                "Specify a path if you want to evaluate."
-            )
-        },
+        metadata={"help": "Path to the LoRA adapter. Used in evaluation or resuming from the checkpoint."},
+    )
+    lora_init: bool = field(
+        default=False,
+        metadata={"help": "True: Use zero and gaussian initialization; False: Load adapters from LoftQ in HF hub."},
+    )
+    full_precision: bool = field(
+        default=False,
+        metadata={"help": "True: Use bitsandbytes Linear4bit, real quantization"
+                          "False: Use quantization equivalent fp16/fp32 weights."
+                          "Note: Set False for data parallel training"
+                  },
+    )
+    rank: int = field(
+        default=64,
+        metadata={"help": "Rank of LoRA adapters. LoftQ does not require this config. Used for fp16 LoRA or QLoRA."},
+    )
+    bits: int = field(
+        default=4,
+        metadata={"help": "Bit of the backbone. LoftQ does not require this config. Used for QLoRA."},
+    )
+    lora_alpha: int = field(
+        default=16,
+        metadata={"help": "LoftQ does not require this config. Used for QLoRA."},
     )
 
     def __post_init__(self):
@@ -178,9 +189,6 @@ class ModelArguments:
             raise ValueError(
                 "--config_overrides can't be used in combination with --config_name or --model_name_or_path"
             )
-        if self.adapter_name_or_path is None:
-            print(f"Loading LoRA adapters from {self.model_name_or_path} for fine-tuning only.")
-            self.adapter_name_or_path = self.model_name_or_path
 
 
 @dataclass
@@ -275,7 +283,10 @@ def main():
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     if model_args.use_auth_token is not None:
-        warnings.warn("The `use_auth_token` argument is deprecated and will be removed in v4.34.", FutureWarning)
+        warnings.warn(
+            "The `use_auth_token` argument is deprecated and will be removed in v4.34. Please use `token` instead.",
+            FutureWarning,
+        )
         if model_args.token is not None:
             raise ValueError("`token` and `use_auth_token` are both specified. Please set only the argument `token`.")
         model_args.token = model_args.use_auth_token
@@ -304,7 +315,7 @@ def main():
 
     # Log on each process the small summary:
     logger.warning(
-        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
+        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}, "
         + f"distributed training: {training_args.parallel_mode.value == 'distributed'}, 16-bits training: {training_args.fp16}"
     )
     logger.info(f"Training/evaluation parameters {training_args}")
@@ -404,7 +415,7 @@ def main():
             )
 
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
-    # https://huggingface.co/docs/datasets/loading_datasets.html.
+    # https://huggingface.co/docs/datasets/loading_datasets.
 
     # Load pretrained model and tokenizer
     #
@@ -415,8 +426,8 @@ def main():
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
+        "token": model_args.token,
         "trust_remote_code": model_args.trust_remote_code,
-        "token": model_args.token
     }
     if model_args.config_name:
         config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
@@ -434,8 +445,8 @@ def main():
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,
         "revision": model_args.model_revision,
-        "trust_remote_code": model_args.trust_remote_code,
         "token": model_args.token,
+        "trust_remote_code": model_args.trust_remote_code,
     }
     if model_args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, **tokenizer_kwargs)
@@ -443,54 +454,61 @@ def main():
         tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, **tokenizer_kwargs)
     else:
         raise ValueError(
-            "You are instantiating a new tokenizer from scratch. This is not supported by this script."
+            "You are instantiating a new tokenizer from scratch. This is not supported by this script. "
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
 
-    ##########################
-    #    Quantized Model     #
-    ##########################
-
-    torch_dtype = (
-        model_args.torch_dtype
-        if model_args.torch_dtype in ["auto", None]
-        else getattr(torch, model_args.torch_dtype)
-    )
-    model = AutoModelForCausalLM.from_pretrained(
+    if model_args.full_precision:
+        model = AutoModelForCausalLM.from_pretrained(
             model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            token=model_args.token,
-            trust_remote_code=model_args.trust_remote_code,
-            torch_dtype=torch_dtype,
             low_cpu_mem_usage=True,
-            load_in_4bit=True,
-            quantization_config=BitsAndBytesConfig(
+            torch_dtype=torch.bfloat16,
+            token=model_args.token,
+        )
+    else:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            low_cpu_mem_usage=True,
+            torch_dtype=torch.bfloat16,
+            token=model_args.token,
+            quantization_config=transformers.BitsAndBytesConfig(
                 load_in_4bit=True,
-                llm_int8_has_fp16_weight=False,
-                bnb_4bit_compute_dtype=torch_dtype,
+                bnb_4bit_compute_dtype=torch.bfloat16,
                 bnb_4bit_use_double_quant=False,
                 bnb_4bit_quant_type='nf4',
             ),
         )
-
     ##########################
     #       Peft Model       #
     ##########################
-    if model_args.adapter_name_or_path is not None:
-        model = PeftModel.from_pretrained(model,
-                                          model_args.adapter_name_or_path,
-                                          is_trainable=True if training_args.do_train else False)
+    if model_args.lora_init:
+        task_type = TaskType.CAUSAL_LM
+        target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "up_proj", "down_proj", "gate_proj"]
+        lora_config = LoraConfig(
+            task_type=task_type,
+            inference_mode=False,
+            r=model_args.rank,
+            lora_alpha=model_args.lora_alpha,
+            lora_dropout=0.1,
+            target_modules=target_modules,
+            init_lora_weights=True,
+        )
+        model = get_peft_model(model, lora_config)
+    elif model_args.adapter_name_or_path is not None:
+        model = PeftModel.from_pretrained(
+            model,
+            model_args.adapter_name_or_path,
+            is_trainable=True if training_args.do_train else False,
+            token=model_args.token,
+        )
     else:
-        model = PeftModel.from_pretrained(model,
-                                          model_args.model_name_or_path,
-                                          subfolder='loftq_init',
-                                          is_trainable=True if training_args.do_train else False)
-    model.print_trainable_parameters()
-    for n, p in model.named_parameters():
-        print(n, p.size(), p.device, p.requires_grad)
+        model = PeftModel.from_pretrained(
+            model,
+            model_args.model_name_or_path,
+            subfolder='loftq_init',
+            is_trainable=True if training_args.do_train else False,
+            token=model_args.token,
+        )
 
     # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
     # on a small vocab and want a smaller embedding size, remove this test.
@@ -536,20 +554,27 @@ def main():
                 batched=True,
                 remove_columns=column_names,
             )
+    if hasattr(config, "max_position_embeddings"):
+        max_pos_embeddings = config.max_position_embeddings
+    else:
+        # Define a default value if the attribute is missing in the config.
+        max_pos_embeddings = 1024
 
     if data_args.block_size is None:
         block_size = tokenizer.model_max_length
-        if block_size > 1024:
+        if block_size > max_pos_embeddings:
             logger.warning(
-                "The chosen tokenizer supports a `model_max_length` that is longer than the default `block_size` value"
-                " of 1024. If you would like to use a longer `block_size` up to `tokenizer.model_max_length` you can"
-                " override this default with `--block_size xxx`."
+                f"The tokenizer picked seems to have a very large `model_max_length` ({tokenizer.model_max_length}). "
+                f"Using block_size={min(1024, max_pos_embeddings)} instead. You can change that default value by passing --block_size xxx."
             )
-            block_size = 1024
+            if max_pos_embeddings > 0:
+                block_size = min(1024, max_pos_embeddings)
+            else:
+                block_size = 1024
     else:
         if data_args.block_size > tokenizer.model_max_length:
             logger.warning(
-                f"The block_size passed ({data_args.block_size}) is larger than the maximum length for the model"
+                f"The block_size passed ({data_args.block_size}) is larger than the maximum length for the model "
                 f"({tokenizer.model_max_length}). Using block_size={tokenizer.model_max_length}."
             )
         block_size = min(data_args.block_size, tokenizer.model_max_length)
@@ -575,7 +600,7 @@ def main():
     # to preprocess.
     #
     # To speed up this part, we use multiprocessing. See the documentation of the map method for more information:
-    # https://huggingface.co/docs/datasets/package_reference/main_classes.html#datasets.Dataset.map
+    # https://huggingface.co/docs/datasets/process#map
 
     with training_args.main_process_first(desc="grouping texts together"):
         if not data_args.streaming:
@@ -700,4 +725,3 @@ def _mp_fn(index):
 
 if __name__ == "__main__":
     main()
-
