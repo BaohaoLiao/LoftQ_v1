@@ -143,6 +143,7 @@ def low_rank_decomposition(weight, lora_rank=32):
 def initialize_lora(
     gold_model,
     lora_model,
+    tokenizer,
     gold_model_device,
     lora_model_device,
     dataset,
@@ -349,6 +350,7 @@ def main(args):
         initialize_lora(
             gold_model,
             lora_model,
+            tokenizer,
             args.gold_model_device,
             args.lora_model_device,
             dataset,
