@@ -66,16 +66,16 @@ def print_model(model, name):
         if torch.is_tensor(param):
             if param.dtype in [torch.float32, torch.float16]:
                 logging.info(
-                    name,
-                    param.shape,
-                    param.device,
-                    param.dtype,
-                    param.requires_grad,
-                    param.mean().item(),
-                    param.max().item(),
+                    f"{name}, "
+                    f"{param.shape}, "
+                    f"{param.device}, "
+                    f"{param.dtype}, "
+                    f"{param.requires_grad}, "
+                    f"{param.mean().item()}, "
+                    f"{param.max().item()}"
                 )
             else:
-                logging.info(name, param.shape, param.device, param.dtype, param.requires_grad)
+                logging.info(f"{name}, {param.shape}, {param.device}, {param.dtype}, {param.requires_grad}")
 
 def load_model_and_tokenizer(args):
     logging.info("Loading gold model ...")
