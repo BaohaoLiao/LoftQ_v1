@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import logging
 import argparse
 import functools
 from collections import OrderedDict
@@ -24,6 +25,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, TaskType, get_peft_model, tuners
 import bitsandbytes as bnb
 
+logger = logging.getLogger(__name__)
 
 class Shell(nn.Module):
     def __init__(self, weight, bias=None):
@@ -51,16 +53,16 @@ def unwrap_model(model, sub_module_name=".base_layer"):
 
         setattr(sub_module, name_child, shell)
 
-    print("You have unwrapped the model. Use it on your own risk.")
+    logger.info("You have unwrapped the model. Use it on your own risk.")
 
 
 def print_model(model, name):
-    print("=" * 10 + name + "=" * 10)
-    print(model)
+    logger.info("=" * 10 + name + "=" * 10)
+    logger.info(model)
     for name, param in model.named_parameters():
         if torch.is_tensor(param):
             if param.dtype in [torch.float32, torch.float16]:
-                print(
+                logger.info(
                     name,
                     param.shape,
                     param.device,
@@ -70,10 +72,10 @@ def print_model(model, name):
                     param.max().item(),
                 )
             else:
-                print(name, param.shape, param.device, param.dtype, param.requires_grad)
+                logger.info(name, param.shape, param.device, param.dtype, param.requires_grad)
 
 def load_model_and_tokenizer(args):
-    print("Loading gold model ...")
+    logger.info("Loading gold model ...")
     gold_model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
         torch_dtype=torch.bfloat16,
@@ -82,7 +84,7 @@ def load_model_and_tokenizer(args):
     )
     gold_model.eval()
 
-    print("Loading lora model ...")
+    logger.info("Loading lora model ...")
     target_modules = ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'up_proj', 'down_proj', 'gate_proj']
     lora_model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
@@ -101,7 +103,7 @@ def load_model_and_tokenizer(args):
     lora_model = get_peft_model(lora_model, lora_config)
     lora_model.eval()
 
-    print("Loading tokenizer ...")
+    logger.info("Loading tokenizer ...")
     tokenizer_kwargs = {
         "cache_dir": None,
         "use_fast": True,
@@ -234,15 +236,15 @@ def initialize_lora(
         if isinstance(m, tuners.lora.Linear) and (name in lora_quantized_modules):
             m.weight.data = quantized_weights[name]
             if name in lora_As:
-                print(f"Initialize lora_A of {name} ...")
+                logger.info(f"Initialize lora_A of {name} ...")
                 m.lora_A["default"].weight.data = lora_As[name] / lora_As[name + ".count"]
             else:
-                print(f"lora_A of {name} stays unchanged!")
+                logger.info(f"lora_A of {name} stays unchanged!")
             if name in lora_Bs:
-                print(f"Initialize lora_B of {name} ...")
+                logger.info(f"Initialize lora_B of {name} ...")
                 m.lora_B["default"].weight.data = lora_Bs[name] / lora_Bs[name + ".count"]
             else:
-                print(f"lora_B of {name} stays unchanged!")
+                logger.info(f"lora_B of {name} stays unchanged!")
 
 
 def arg_parse():
@@ -345,7 +347,7 @@ def main(args):
             for module in block_modules:
                 temp.append(module.replace(".0.", f".{l}."))
             ordered_init_modules.append(temp)
-    print(f"Ordered init modules: {ordered_init_modules}")
+    logger.info(f"Ordered init modules: {ordered_init_modules}")
 
     for modules in ordered_init_modules:
         initialize_lora(
