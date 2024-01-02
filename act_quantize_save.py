@@ -265,16 +265,16 @@ def arg_parse():
         help="The device for the gold(original) model",
     )
     parser.add_argument(
-        "--bits",
-        type=int,
-        default=4,
-        help="The quantized bits",
-    )
-    parser.add_argument(
         "--lora_model_device",
         type=str,
         default="cuda",
         help="The device for the lora model",
+    )
+    parser.add_argument(
+        "--bits",
+        type=int,
+        default=4,
+        help="The quantized bits",
     )
     parser.add_argument(
         "--num_samples",
