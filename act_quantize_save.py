@@ -345,7 +345,7 @@ def main(args):
         ["model.layers.0.mlp.down_proj"],
     ]
     ordered_init_modules = []
-    for l in range(2): #gold_model.config.num_hidden_layers):
+    for l in range(gold_model.config.num_hidden_layers):
         for block_modules in ordered_moduels:
             temp = []
             for module in block_modules:
