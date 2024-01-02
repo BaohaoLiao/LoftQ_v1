@@ -367,31 +367,31 @@ def main(args):
             max_length=args.max_length
         )
 
-        # Save
-        base_model = lora_model.get_base_model()
+    # Save
+    base_model = lora_model.get_base_model()
 
-        # Save Quantized model
-        model_name = args.model_name_or_path.split("/")[-1] + \
-                     f"-{args.bits}bit" + \
-                     f"-{args.lora_rank}rank" + \
-                     f"-{args.lora_dropout}dropout"
-        base_model_dir = os.path.join(args.save_dir, model_name)
-        lora_model_dir = os.path.join(args.save_dir, model_name, "loftq_init")
+    # Save Quantized model
+    model_name = args.model_name_or_path.split("/")[-1] + \
+                 f"-{args.bits}bit" + \
+                 f"-{args.lora_rank}rank" + \
+                 f"-{args.lora_dropout}dropout"
+    base_model_dir = os.path.join(args.save_dir, model_name)
+    lora_model_dir = os.path.join(args.save_dir, model_name, "loftq_init")
 
-        # save lora adapters first
-        lora_model.base_model.peft_config[
-            "default"
-        ].base_model_name_or_path = base_model_dir  # This can be a local path or Hub model id
-        lora_model.base_model.peft_config["default"].init_lora_weights = True  # Don't apply LoftQ when loading again
+    # save lora adapters first
+    lora_model.base_model.peft_config[
+        "default"
+    ].base_model_name_or_path = base_model_dir  # This can be a local path or Hub model id
+    lora_model.base_model.peft_config["default"].init_lora_weights = True  # Don't apply LoftQ when loading again
 
-        lora_model.save_pretrained(lora_model_dir)
-        print_model(lora_model, "lora_model")
+    lora_model.save_pretrained(lora_model_dir)
+    print_model(lora_model, "lora_model")
 
-        # remove lora adapters and save the backbone
-        unwrap_model(base_model)
-        base_model.save_pretrained(base_model_dir)
-        tokenizer.save_pretrained(base_model_dir)
-        print_model(base_model, "base_model")
+    # remove lora adapters and save the backbone
+    unwrap_model(base_model)
+    base_model.save_pretrained(base_model_dir)
+    tokenizer.save_pretrained(base_model_dir)
+    print_model(base_model, "base_model")
 
 
 if __name__ == "__main__":
