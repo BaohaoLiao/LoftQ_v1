@@ -396,4 +396,5 @@ def main(args):
 
 if __name__ == "__main__":
     args = arg_parse()
+    logging.info(args)
     main(args)
