@@ -76,7 +76,7 @@ def load_model_and_tokenizer(args):
     gold_model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
         torch_dtype=torch.bfloat16,
-        use_auth_token=args.hf_token,
+        use_auth_token=args.token,
         device_map=args.gold_model_device,
     )
     gold_model.eval()
@@ -86,7 +86,7 @@ def load_model_and_tokenizer(args):
     lora_model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
         torch_dtype=torch.bfloat16,
-        use_auth_token=args.hf_token,
+        use_auth_token=args.token,
         device_map=args.lora_model_device,
     )
     lora_config = LoraConfig(
