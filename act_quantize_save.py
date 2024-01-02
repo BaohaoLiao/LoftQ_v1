@@ -25,7 +25,10 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, TaskType, get_peft_model, tuners
 import bitsandbytes as bnb
 
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
 
 class Shell(nn.Module):
     def __init__(self, weight, bias=None):
@@ -53,16 +56,16 @@ def unwrap_model(model, sub_module_name=".base_layer"):
 
         setattr(sub_module, name_child, shell)
 
-    logger.info("You have unwrapped the model. Use it on your own risk.")
+    logging.info("You have unwrapped the model. Use it on your own risk.")
 
 
 def print_model(model, name):
-    logger.info("=" * 10 + name + "=" * 10)
-    logger.info(model)
+    logging.info("=" * 10 + name + "=" * 10)
+    logging.info(model)
     for name, param in model.named_parameters():
         if torch.is_tensor(param):
             if param.dtype in [torch.float32, torch.float16]:
-                logger.info(
+                logging.info(
                     name,
                     param.shape,
                     param.device,
@@ -72,10 +75,10 @@ def print_model(model, name):
                     param.max().item(),
                 )
             else:
-                logger.info(name, param.shape, param.device, param.dtype, param.requires_grad)
+                logging.info(name, param.shape, param.device, param.dtype, param.requires_grad)
 
 def load_model_and_tokenizer(args):
-    logger.info("Loading gold model ...")
+    logging.info("Loading gold model ...")
     gold_model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
         torch_dtype=torch.bfloat16,
@@ -84,7 +87,7 @@ def load_model_and_tokenizer(args):
     )
     gold_model.eval()
 
-    logger.info("Loading lora model ...")
+    logging.info("Loading lora model ...")
     target_modules = ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'up_proj', 'down_proj', 'gate_proj']
     lora_model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
@@ -103,7 +106,7 @@ def load_model_and_tokenizer(args):
     lora_model = get_peft_model(lora_model, lora_config)
     lora_model.eval()
 
-    logger.info("Loading tokenizer ...")
+    logging.info("Loading tokenizer ...")
     tokenizer_kwargs = {
         "cache_dir": None,
         "use_fast": True,
@@ -236,15 +239,15 @@ def initialize_lora(
         if isinstance(m, tuners.lora.Linear) and (name in lora_quantized_modules):
             m.weight.data = quantized_weights[name]
             if name in lora_As:
-                logger.info(f"Initialize lora_A of {name} ...")
+                logging.info(f"Initialize lora_A of {name} ...")
                 m.lora_A["default"].weight.data = lora_As[name] / lora_As[name + ".count"]
             else:
-                logger.info(f"lora_A of {name} stays unchanged!")
+                logging.info(f"lora_A of {name} stays unchanged!")
             if name in lora_Bs:
-                logger.info(f"Initialize lora_B of {name} ...")
+                logging.info(f"Initialize lora_B of {name} ...")
                 m.lora_B["default"].weight.data = lora_Bs[name] / lora_Bs[name + ".count"]
             else:
-                logger.info(f"lora_B of {name} stays unchanged!")
+                logging.info(f"lora_B of {name} stays unchanged!")
 
 
 def arg_parse():
@@ -324,6 +327,7 @@ def arg_parse():
     args = parser.parse_args()
     return args
 
+
 def main(args):
     gold_model, lora_model, tokenizer = load_model_and_tokenizer(args)
     dataset = load_dataset(
@@ -347,7 +351,7 @@ def main(args):
             for module in block_modules:
                 temp.append(module.replace(".0.", f".{l}."))
             ordered_init_modules.append(temp)
-    logger.info(f"Ordered init modules: {ordered_init_modules}")
+    logging.info(f"Ordered init modules: {ordered_init_modules}")
 
     for modules in ordered_init_modules:
         initialize_lora(
@@ -363,31 +367,31 @@ def main(args):
             max_length=args.max_length
         )
 
-    # Save
-    base_model = lora_model.get_base_model()
+        # Save
+        base_model = lora_model.get_base_model()
 
-    # Save Quantized model
-    model_name = args.model_name_or_path.split("/")[-1] + \
-                 f"-{args.bits}bit" + \
-                 f"-{args.lora_rank}rank" + \
-                 f"-{args.lora_dropout}dropout"
-    base_model_dir = os.path.join(args.save_dir, model_name)
-    lora_model_dir = os.path.join(args.save_dir, model_name, "loftq_init")
+        # Save Quantized model
+        model_name = args.model_name_or_path.split("/")[-1] + \
+                     f"-{args.bits}bit" + \
+                     f"-{args.lora_rank}rank" + \
+                     f"-{args.lora_dropout}dropout"
+        base_model_dir = os.path.join(args.save_dir, model_name)
+        lora_model_dir = os.path.join(args.save_dir, model_name, "loftq_init")
 
-    # save lora adapters first
-    lora_model.base_model.peft_config[
-        "default"
-    ].base_model_name_or_path = base_model_dir  # This can be a local path or Hub model id
-    lora_model.base_model.peft_config["default"].init_lora_weights = True  # Don't apply LoftQ when loading again
+        # save lora adapters first
+        lora_model.base_model.peft_config[
+            "default"
+        ].base_model_name_or_path = base_model_dir  # This can be a local path or Hub model id
+        lora_model.base_model.peft_config["default"].init_lora_weights = True  # Don't apply LoftQ when loading again
 
-    lora_model.save_pretrained(lora_model_dir)
-    print_model(lora_model, "lora_model")
+        lora_model.save_pretrained(lora_model_dir)
+        print_model(lora_model, "lora_model")
 
-    # remove lora adapters and save the backbone
-    unwrap_model(base_model)
-    base_model.save_pretrained(base_model_dir)
-    tokenizer.save_pretrained(base_model_dir)
-    print_model(base_model, "base_model")
+        # remove lora adapters and save the backbone
+        unwrap_model(base_model)
+        base_model.save_pretrained(base_model_dir)
+        tokenizer.save_pretrained(base_model_dir)
+        print_model(base_model, "base_model")
 
 
 if __name__ == "__main__":
