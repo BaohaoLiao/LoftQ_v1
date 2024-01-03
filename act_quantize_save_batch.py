@@ -231,7 +231,7 @@ def initialize_lora(
         import time
         start = time.time()
         gold_act_dicts = obtain_gold_activation(gold_model, gold_model_device, inputs, quantized_modules)
-        logging.info(f"{(time.time() - start)}")
+        logging.info(f"time for gold act: {(time.time() - start)}")
 
         ## initialize lora_A and lora_B
         def lora_init_hook(m, x, y, name):
@@ -294,7 +294,9 @@ def initialize_lora(
                 hooks.append(m.register_forward_hook(functools.partial(lora_init_hook, name=name)))
 
         lora_inputs = {k: v.to(device=lora_model_device) for k, v in inputs.items()}
+        start = time.time()
         lora_model(**lora_inputs)
+        logging.info(f"time for init lora: {time.time() - start}")
         for hook in hooks:
             hook.remove()
 
