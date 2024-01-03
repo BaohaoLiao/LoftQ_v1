@@ -186,6 +186,7 @@ def obtain_gold_activation(gold_model, gold_model_device, inputs, quantized_modu
         hook.remove()
     return act_dicts
 
+
 def low_rank_decomposition(weights, lora_rank=32):
     U, S, Vh = torch.linalg.svd(weights, full_matrices=False)
     L = U @ (torch.sqrt(torch.diag_embed(S)[:, :, 0:lora_rank]))
