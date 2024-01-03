@@ -181,7 +181,7 @@ def obtain_gold_activation(gold_model, gold_model_device, inputs, quantized_modu
             hooks.append(m.register_forward_hook(functools.partial(save_act_hook, name=name)))
 
     gold_inputs = {k: v.to(device=gold_model_device) for k, v in inputs.items()}
-    gold_model(gold_inputs)
+    gold_model(**gold_inputs)
     for hook in hooks:
         hook.remove()
     return act_dicts
@@ -289,7 +289,7 @@ def initialize_lora(
                 hooks.append(m.register_forward_hook(functools.partial(lora_init_hook, name=name)))
 
         lora_inputs = {k: v.to(device=lora_model_device) for k, v in inputs.items()}
-        lora_model(lora_inputs)
+        lora_model(**lora_inputs)
         for hook in hooks:
             hook.remove()
 
