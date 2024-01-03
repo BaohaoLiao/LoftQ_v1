@@ -259,8 +259,7 @@ def initialize_lora(
 
             print(ori_weight_err, ori_weight_err.dtype, weight_errs, weight_errs.dtype)
 
-            err_masks = weight_errs > (threshold_scale * ori_weight_err)
-            #| torch.isnan(weight_errs) | torch.isinf(weight_errs)
+            err_masks = weight_errs > (threshold_scale * ori_weight_err) | torch.isnan(weight_errs) | torch.isinf(weight_errs)
             L = Ls[~err_masks].mean(dim=0)
             R = Rs[~err_masks].mean(dim=0)
 
