@@ -216,7 +216,6 @@ def initialize_lora(
     for module in quantized_modules:
         lora_quantized_modules.append("base_model.model." + module)
 
-
     assert num_samples % batch_size == 0, "Make sure the batch size is divisible by the number of samples."
     for i in range(0, num_samples, batch_size):
         inputs = tokenizer(
@@ -302,7 +301,7 @@ def initialize_lora(
         lora_inputs = {k: v.to(device=lora_model_device) for k, v in inputs.items()}
         start = time.time()
         lora_model(**lora_inputs)
-        logging.info(f"time for init lora: {time.time() - start}")
+        logging.info(f"{name} | time for init lora: {time.time() - start}")
         for hook in hooks:
             hook.remove()
 
