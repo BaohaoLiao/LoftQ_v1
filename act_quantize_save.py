@@ -242,12 +242,12 @@ def initialize_lora(
         if isinstance(m, tuners.lora.Linear) and (name in lora_quantized_modules):
             m.weight.data = quantized_weights[name]
             if name in lora_As:
-                logging.info(f"Initialize lora_A of {name} ...")
+                logging.info(f"Initialize lora_A of {name}, count {lora_As[name + '.count']} ...")
                 m.lora_A["default"].weight.data = lora_As[name] / lora_As[name + ".count"]
             else:
                 logging.info(f"lora_A of {name} stays unchanged!")
             if name in lora_Bs:
-                logging.info(f"Initialize lora_B of {name} ...")
+                logging.info(f"Initialize lora_B of {name}, count {lora_Bs[name + '.count']} ...")
                 m.lora_B["default"].weight.data = lora_Bs[name] / lora_Bs[name + ".count"]
             else:
                 logging.info(f"lora_B of {name} stays unchanged!")
