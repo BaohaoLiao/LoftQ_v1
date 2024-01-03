@@ -205,6 +205,7 @@ def initialize_lora(
     num_samples=128,
     max_length=256,
     threshold_scale=5,
+    batch_size=4,
 ):
     lora_As = OrderedDict()
     lora_Bs = OrderedDict()
@@ -213,12 +214,14 @@ def initialize_lora(
     for module in quantized_modules:
         lora_quantized_modules.append("base_model.model." + module)
 
-    for i in range(num_samples):
+    assert num_samples % batch_size == 0, "Make sure the batch size is divisible by the number of samples."
+    for i in range(0, num_samples, batch_size):
         inputs = tokenizer(
-            dataset["train"][i]["text"],
+            [dataset["train"][j]["text"] for j in range(i, i+batch_size)],
             return_tensors="pt",
             max_length=max_length,
             truncation=True,
+            padding=True,
         )
 
         # obtain gold activation
@@ -352,6 +355,11 @@ def arg_parse():
         help="The max length of the tokenized sentence",
     )
     parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=4,
+    )
+    parser.add_argument(
         "--lora_rank",
         type=int,
         default=64,
@@ -420,7 +428,8 @@ def main(args):
             modules,
             args.lora_rank,
             num_samples=args.num_samples,
-            max_length=args.max_length
+            max_length=args.max_length,
+            batch_size=args.batch_size,
         )
 
     # Save
