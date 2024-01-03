@@ -225,7 +225,7 @@ def initialize_lora(
         )
 
         # obtain gold activation
-        gold_act_dicts = obtain_gold_activation(gold_model, gold_model_device, input_ids, quantized_modules)
+        gold_act_dicts = obtain_gold_activation(gold_model, gold_model_device, inputs, quantized_modules)
 
         ## initialize lora_A and lora_B
         def lora_init_hook(m, x, y, name):
