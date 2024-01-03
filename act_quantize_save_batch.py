@@ -207,6 +207,7 @@ def initialize_lora(
     max_length=256,
     threshold_scale=5,
     batch_size=4,
+    compute_device = torch.float16,
 ):
     lora_As = OrderedDict()
     lora_Bs = OrderedDict()
@@ -214,6 +215,7 @@ def initialize_lora(
     lora_quantized_modules = []
     for module in quantized_modules:
         lora_quantized_modules.append("base_model.model." + module)
+
 
     assert num_samples % batch_size == 0, "Make sure the batch size is divisible by the number of samples."
     for i in range(0, num_samples, batch_size):
@@ -235,9 +237,9 @@ def initialize_lora(
         def lora_init_hook(m, x, y, name):
             dtype = y.dtype
             gold_name = name[len("base_model.model."):]
-            gold_x = gold_act_dicts[gold_name + ".input"].to("cuda", dtype=torch.float32)
-            gold_y = gold_act_dicts[gold_name + ".output"].to("cuda", dtype=torch.float32)
-            lora_x = x[0].clone().to("cuda", dtype=torch.float32)
+            gold_x = gold_act_dicts[gold_name + ".input"].to("cuda", dtype=compute_device)
+            gold_y = gold_act_dicts[gold_name + ".output"].to("cuda", dtype=compute_device)
+            lora_x = x[0].clone().to("cuda", dtype=compute_device)
 
             weight = m.weight.clone()
             weight = weight.to(device="cuda", dtype=torch.float32)
@@ -251,7 +253,7 @@ def initialize_lora(
                 q_weight.data,
                 q_weight.quant_state,
                 quant_type="nf4"
-            ).to(dtype=torch.float32)
+            ).to(dtype=compute_device)
 
             res = (gold_y - lora_x @ deq_weight.T) / m.scaling["default"]
             lstsqs = torch.linalg.lstsq(lora_x, res).solution
