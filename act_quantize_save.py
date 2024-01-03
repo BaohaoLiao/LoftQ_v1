@@ -213,7 +213,8 @@ def initialize_lora(
             weight_err = torch.norm(weight - deq_weight - m.scaling['default'] * torch.mm(L, R))
 
             logging.info(
-                f"ori weight err: {ori_weight_err}, weight err: {weight_err}, ori act err: {ori_err}, act err: {new_err}")
+                f"iter {i} | weight err: {ori_weight_err:.3f} vs {weight_err:.3f}, "
+                f"act err: {ori_err:.3f} vs {new_err:.3f}")
             if (not torch.isnan(deq_weight).any()) and (not torch.isnan(R).any()) and (not torch.isnan(L).any()) \
                     and new_err < threshold_scale * ori_err and weight_err < threshold_scale * ori_weight_err:
                 if name in lora_As:
