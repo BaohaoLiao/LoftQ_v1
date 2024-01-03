@@ -277,7 +277,7 @@ def initialize_lora(
                 else:
                     lora_As[name] = (R * count).to(device=lora_model_device, dtype=dtype)
                     lora_As[name + ".count"] = count
-                logging.info(f"{name}: count {count}, {lora_As[name + '.count']}")
+                logging.info(f"A, {name}: count {count}, {lora_As[name + '.count']}")
 
                 if name in lora_Bs:
                     lora_Bs[name] = lora_Bs[name] + (L * count).to(device=lora_model_device, dtype=dtype)
@@ -285,6 +285,7 @@ def initialize_lora(
                 else:
                     lora_Bs[name] = (L * count).to(device=lora_model_device, dtype=dtype)
                     lora_Bs[name + ".count"] = count
+                logging.info(f"B, {name}: count {count}, {lora_Bs[name + '.count']}")
 
                 quantized_weights[name] = deq_weight.to(device=lora_model_device, dtype=dtype)
 
