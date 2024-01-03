@@ -278,7 +278,7 @@ def initialize_lora(
             ori_err = torch.norm(gold_y - gold_x @ deq_weight.T)
             new_err = torch.norm(gold_y - lora_x @ deq_weight.T - m.scaling['default'] * lora_x @ torch.mm(L, R).T)
             logging.info(f"ori weight err: {ori_weight_err}, weight err: {weight_errs}, ori act err: {ori_err}, act err: {new_err}")
-            if  new_err < (threshold_scale * ori_err) and (not torch.isnan(new_err)):
+            if  new_err < (threshold_scale * ori_err):
                 count = (~err_masks).sum()
                 if name in lora_As:
                     lora_As[name] = lora_As[name] + (R * count).to(device=lora_model_device, dtype=dtype)
