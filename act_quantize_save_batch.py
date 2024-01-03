@@ -142,7 +142,7 @@ def load_model_and_tokenizer(args):
         "use_fast": True,
         "revision": "main",
         "trust_remote_code": False,
-        "token": args.token,
+        "use_auth_token": args.token,
         "padding_side": "right",
     }
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, **tokenizer_kwargs)
