@@ -141,10 +141,10 @@ def obtain_gold_activation(gold_model, gold_model_device, input_ids, quantized_m
 def low_rank_decomposition(weight, lora_rank=32):
     """CPU is faster than GPU"""
     assert len(weight.size()) == 2, "Only Support 2D matrix"
-    U, S, Vh = torch.linalg.svd(weight.to("cpu"), full_matrices=False)
+    U, S, Vh = torch.linalg.svd(weight, full_matrices=False)
     L = U @ (torch.sqrt(torch.diag(S)[:, 0:lora_rank]))
     R = torch.sqrt(torch.diag(S)[0:lora_rank, :]) @ Vh
-    return L.to("cuda"), R.to("cuda")
+    return L, R
 
 @torch.no_grad()
 def initialize_lora(
