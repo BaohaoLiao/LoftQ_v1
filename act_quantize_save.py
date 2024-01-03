@@ -202,7 +202,8 @@ def initialize_lora(
 
             res = (gold_y - lora_x @ deq_weight.T) / m.scaling["default"]
             lstsq = torch.linalg.lstsq(lora_x, res).solution
-            if torch.isinf(lstsq) or torch.isnan(lstsq):
+            if torch.isinf(lstsq).any() or torch.isnan(lstsq).any():
+                loggging.info("Nan or inf in lstsq")
                 return y
             L, R = low_rank_decomposition(lstsq.T, lora_rank=lora_rank)
 
