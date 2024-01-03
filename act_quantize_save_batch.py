@@ -235,6 +235,7 @@ def initialize_lora(
 
         ## initialize lora_A and lora_B
         def lora_init_hook(m, x, y, name):
+            time0 = time.time()
             dtype = y.dtype
             gold_name = name[len("base_model.model."):]
             gold_x = gold_act_dicts[gold_name + ".input"].to("cuda", dtype=compute_device)
@@ -256,9 +257,14 @@ def initialize_lora(
             ).to(dtype=compute_device)
 
             res = (gold_y - lora_x @ deq_weight.T) / m.scaling["default"]
+            time1 = time.time()
             lstsqs = torch.linalg.lstsq(lora_x, res).solution
+            time2 = time.time()
             lstsq_masks = torch.isnan(lstsqs).any(dim=1).any(dim=1) | torch.isinf(lstsqs).any(dim=1).any(dim=1)
             Ls, Rs = low_rank_decomposition(torch.transpose(lstsqs[~lstsq_masks], 1, 2), lora_rank=lora_rank)
+            time3 = time.time()
+
+            logging.info(f"time for lstsq: {time2-time1}, for svd: {time3-time2}")
 
             ori_weight_err = torch.norm(weight - deq_weight)
             weight_errs = torch.norm(weight - deq_weight - m.scaling['default'] * Ls @ Rs, dim=(1, 2))
