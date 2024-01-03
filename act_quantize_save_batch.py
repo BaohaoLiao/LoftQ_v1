@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import time
 import logging
 import argparse
 import functools
@@ -229,10 +230,13 @@ def initialize_lora(
         )
 
         # obtain gold activation
+        start = time.time()
         gold_act_dicts = obtain_gold_activation(gold_model, gold_model_device, inputs, quantized_modules)
+        logging.info(f"time for gold act: {(time.time() - start)}")
 
         ## initialize lora_A and lora_B
         def lora_init_hook(m, x, y, name):
+            time0 = time.time()
             dtype = y.dtype
             gold_name = name[len("base_model.model."):]
             gold_x = gold_act_dicts[gold_name + ".input"].to("cuda", dtype=compute_device)
@@ -254,9 +258,14 @@ def initialize_lora(
             ).to(dtype=compute_device)
 
             res = (gold_y - lora_x @ deq_weight.T) / m.scaling["default"]
+            time1 = time.time()
             lstsqs = torch.linalg.lstsq(lora_x, res).solution
+            time2 = time.time()
             lstsq_masks = torch.isnan(lstsqs).any(dim=1).any(dim=1) | torch.isinf(lstsqs).any(dim=1).any(dim=1)
             Ls, Rs = low_rank_decomposition(torch.transpose(lstsqs[~lstsq_masks], 1, 2), lora_rank=lora_rank)
+            time3 = time.time()
+
+            logging.info(f"time for lstsq: {time2-time1}, for svd: {time3-time2}")
 
             ori_weight_err = torch.norm(weight - deq_weight)
             weight_errs = torch.norm(weight - deq_weight - m.scaling['default'] * Ls @ Rs, dim=(1, 2))
@@ -268,10 +277,7 @@ def initialize_lora(
 
             ori_err = torch.norm(gold_y - gold_x @ deq_weight.T)
             new_err = torch.norm(gold_y - lora_x @ deq_weight.T - m.scaling['default'] * lora_x @ torch.mm(L, R).T)
-            #logging.info(f"ori weight err: {ori_weight_err}, "
-            #             f"weight err: {weight_errs}, "
-            #             f"ori act err: {ori_err}, "
-            #             f"act err: {new_err}")
+            logging.info(f"ori weight err: {ori_weight_err}, weight err: {weight_errs}, ori act err: {ori_err}, act err: {new_err}")
             if  new_err < (threshold_scale * ori_err):
                 count = (~err_masks).sum()
                 if name in lora_As:
@@ -296,7 +302,9 @@ def initialize_lora(
                 hooks.append(m.register_forward_hook(functools.partial(lora_init_hook, name=name)))
 
         lora_inputs = {k: v.to(device=lora_model_device) for k, v in inputs.items()}
+        start = time.time()
         lora_model(**lora_inputs)
+        logging.info(f"time for init lora: {time.time() - start}")
         for hook in hooks:
             hook.remove()
 
