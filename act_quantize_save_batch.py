@@ -225,7 +225,10 @@ def initialize_lora(
         )
 
         # obtain gold activation
+        import time
+        start = time.time()
         gold_act_dicts = obtain_gold_activation(gold_model, gold_model_device, inputs, quantized_modules)
+        print(time.time() - start)
 
         ## initialize lora_A and lora_B
         def lora_init_hook(m, x, y, name):
