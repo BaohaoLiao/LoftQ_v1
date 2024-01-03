@@ -256,13 +256,14 @@ def initialize_lora(
 
             ori_weight_err = torch.norm(weight - deq_weight)
             weight_errs = torch.norm(weight - deq_weight - m.scaling['default'] * Ls @ Rs, dim=(1, 2))
-            err_masks = weight_errs > threshold_scale * ori_weight_err\
+            err_masks = weight_errs > (threshold_scale * ori_weight_err)\
                         | torch.isnan(weight_errs) | torch.isinf(weight_errs)
             L = Ls[~err_masks].mean(dim=0)
             R = Rs[~err_masks].mean(dim=0)
 
             ori_err = torch.norm(gold_y - gold_x @ deq_weight.T)
             new_err = torch.norm(gold_y - lora_x @ deq_weight.T - m.scaling['default'] * lora_x @ torch.mm(L, R).T)
+            print(lstsq_masks, err_masks, ori_weight_err, weight_errs, ori_err, new_err)
 
             logging.info(f"new err: {new_err}, ori err {ori_err}")
             if  new_err < threshold_scale * ori_err:
