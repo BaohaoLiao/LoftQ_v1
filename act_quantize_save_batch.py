@@ -273,7 +273,7 @@ def initialize_lora(
                 count = (~err_masks).sum()
                 if name in lora_As:
                     lora_As[name] = lora_As[name] + (R * count).to(device=lora_model_device, dtype=dtype)
-                    lora_As[name + ".count"] += count
+                    lora_As[name + ".count"] = lora_As[name + ".count"] + count
                 else:
                     lora_As[name] = (R * count).to(device=lora_model_device, dtype=dtype)
                     lora_As[name + ".count"] = count
@@ -281,7 +281,7 @@ def initialize_lora(
 
                 if name in lora_Bs:
                     lora_Bs[name] = lora_Bs[name] + (L * count).to(device=lora_model_device, dtype=dtype)
-                    lora_Bs[name + ".count"] += count
+                    lora_Bs[name + ".count"] = lora_Bs[name + ".count"] + count
                 else:
                     lora_Bs[name] = (L * count).to(device=lora_model_device, dtype=dtype)
                     lora_Bs[name + ".count"] = count
