@@ -212,14 +212,14 @@ def initialize_lora(
                     and new_err < threshold_scale * ori_err and weight_err < threshold_scale * ori_weight_err:
                 if name in lora_As:
                     lora_As[name] = lora_As[name] + R.to(device=lora_model_device, dtype=dtype)
-                    lora_As[name + ".count"] += 1
+                    lora_As[name + ".count"] = lora_As[name + ".count"] + 1
                 else:
                     lora_As[name] = R.to(device=lora_model_device, dtype=dtype)
                     lora_As[name + ".count"] = 1
 
                 if name in lora_Bs:
                     lora_Bs[name] = lora_Bs[name] + L.to(device=lora_model_device, dtype=dtype)
-                    lora_Bs[name + ".count"] += 1
+                    lora_Bs[name + ".count"] = lora_Bs[name + ".count"] + 1
                 else:
                     lora_Bs[name] = L.to(device=lora_model_device, dtype=dtype)
                     lora_Bs[name + ".count"] = 1
