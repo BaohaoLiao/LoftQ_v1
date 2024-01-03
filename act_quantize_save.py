@@ -201,7 +201,10 @@ def initialize_lora(
             ).to(dtype=torch.float32)
 
             res = (gold_y - lora_x @ deq_weight.T) / m.scaling["default"]
-            L, R = low_rank_decomposition(torch.linalg.lstsq(lora_x, res).solution.T, lora_rank=lora_rank)
+            lstsq = torch.linalg.lstsq(lora_x, res).solution
+            if torch.isinf(lstsq) or torch.isnan(lstsq):
+                return y
+            L, R = low_rank_decomposition(lstsq.T, lora_rank=lora_rank)
 
             ori_err = torch.norm(gold_y - gold_x @ deq_weight.T)
             new_err = torch.norm(gold_y - lora_x @ deq_weight.T - m.scaling['default'] * lora_x @ torch.mm(L, R).T)
