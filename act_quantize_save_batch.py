@@ -188,10 +188,10 @@ def obtain_gold_activation(gold_model, gold_model_device, inputs, quantized_modu
 
 
 def low_rank_decomposition(weights, lora_rank=32):
-    U, S, Vh = torch.linalg.svd(weights, full_matrices=False, driver="gesvdj")
+    U, S, Vh = torch.linalg.svd(weights.to("cpu"), full_matrices=False)
     L = U @ (torch.sqrt(torch.diag_embed(S)[:, :, 0:lora_rank]))
     R = torch.sqrt(torch.diag_embed(S)[:, 0:lora_rank, :]) @ Vh
-    return L, R
+    return L.to("cuda"), R.to("cuda")
 
 @torch.no_grad()
 def initialize_lora(
