@@ -188,7 +188,7 @@ def obtain_gold_activation(gold_model, gold_model_device, inputs, quantized_modu
 
 
 def low_rank_decomposition(weights, lora_rank=32):
-    U, S, Vh = torch.linalg.svd(weights, full_matrices=False)
+    U, S, Vh = torch.linalg.svd(weights, full_matrices=False, driver="gesvdj")
     L = U @ (torch.sqrt(torch.diag_embed(S)[:, :, 0:lora_rank]))
     R = torch.sqrt(torch.diag_embed(S)[:, 0:lora_rank, :]) @ Vh
     return L, R
@@ -301,7 +301,7 @@ def initialize_lora(
         lora_inputs = {k: v.to(device=lora_model_device) for k, v in inputs.items()}
         start = time.time()
         lora_model(**lora_inputs)
-        logging.info(f"{name} | time for init lora: {time.time() - start}")
+        logging.info(f"time for init lora: {time.time() - start}")
         for hook in hooks:
             hook.remove()
 
