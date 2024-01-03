@@ -277,6 +277,7 @@ def initialize_lora(
                 else:
                     lora_As[name] = (R * count).to(device=lora_model_device, dtype=dtype)
                     lora_As[name + ".count"] = count
+                logging.info(f"count: {count}, {lora_As[name + '.count']}")
 
                 if name in lora_Bs:
                     lora_Bs[name] = lora_Bs[name] + (L * count).to(device=lora_model_device, dtype=dtype)
