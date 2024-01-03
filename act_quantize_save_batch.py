@@ -207,7 +207,7 @@ def initialize_lora(
     max_length=256,
     threshold_scale=5,
     batch_size=4,
-    compute_device = torch.float16,
+    compute_device=torch.float16,
 ):
     lora_As = OrderedDict()
     lora_Bs = OrderedDict()
