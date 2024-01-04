@@ -208,13 +208,14 @@ def initialize_lora(
             L, R = low_rank_decomposition(lstsq.T, lora_rank=lora_rank)
 
             ori_err = torch.norm(gold_y - gold_x @ deq_weight.T)
+            qlora_err = torch.norm(gold_y - lora_x @ deq_weight.T)
             new_err = torch.norm(gold_y - lora_x @ deq_weight.T - m.scaling['default'] * lora_x @ torch.mm(L, R).T)
             ori_weight_err = torch.norm(weight - deq_weight)
             weight_err = torch.norm(weight - deq_weight - m.scaling['default'] * torch.mm(L, R))
 
             logging.info(
                 f"iter {i}, {'.'.join(name.split('.')[-3:])} \t weight err: {ori_weight_err:.3f} vs {weight_err:.3f}"
-                f"\tact err: {ori_err:.3f} vs {new_err:.6f}")
+                f"\tact err: {ori_err:.3f} vs {qlora_err:.3f} vs {new_err:.3f}")
             if (not torch.isnan(deq_weight).any()) and (not torch.isnan(R).any()) and (not torch.isnan(L).any()) \
                     and new_err < threshold_scale * ori_err and weight_err < threshold_scale * ori_weight_err:
                 if name in lora_As:
