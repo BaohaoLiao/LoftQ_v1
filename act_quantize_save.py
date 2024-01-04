@@ -25,7 +25,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, TaskType, get_peft_model, tuners
 import bitsandbytes as bnb
 
-from uttils import NFQuantizer
+from utils import NFQuantizer
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
