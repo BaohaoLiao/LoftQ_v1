@@ -25,6 +25,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, TaskType, get_peft_model, tuners
 import bitsandbytes as bnb
 
+from uttils import NFQuantizer
+
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
     level=logging.INFO,
@@ -159,6 +161,7 @@ def initialize_lora(
     num_samples=128,
     max_length=256,
     threshold_scale=5,
+    quantizer=None,
 ):
     lora_As = OrderedDict()
     lora_Bs = OrderedDict()
@@ -188,17 +191,21 @@ def initialize_lora(
 
             weight = m.weight.clone()
             weight = weight.to(device="cuda", dtype=torch.float32)
-            q_weight = bnb.nn.Params4bit(
-                weight.to("cpu"),
-                requires_grad=False,
-                compress_statistics=False,
-                quant_type="nf4"
-            ).to("cuda")
-            deq_weight = bnb.functional.dequantize_4bit(
-                q_weight.data,
-                q_weight.quant_state,
-                quant_type="nf4"
-            ).to(dtype=torch.float32)
+            if quantizer is None:
+                q_weight = bnb.nn.Params4bit(
+                    weight.to("cpu"),
+                    requires_grad=False,
+                    compress_statistics=False,
+                    quant_type="nf4"
+                ).to("cuda")
+                deq_weight = bnb.functional.dequantize_4bit(
+                    q_weight.data,
+                    q_weight.quant_state,
+                    quant_type="nf4"
+                ).to(dtype=torch.float32)
+            else:
+                q_weight, max_abs, shape = quantizer.quantize_block(weight)
+                deq_weight = quantizer.dequantize_block(q_weight, max_abs, shape)
 
             res = (gold_y - lora_x @ deq_weight.T) / m.scaling["default"]
             lstsq = torch.linalg.lstsq(lora_x, res).solution
@@ -333,6 +340,11 @@ def arg_parse():
         type=int,
         default=42,
     )
+    parser.add_argument(
+        "--custom_quantizer",
+        action='store_true',
+        help="Use custom quantizer instead of bitsandbytes"
+    )
     args = parser.parse_args()
     return args
 
@@ -362,6 +374,11 @@ def main(args):
             ordered_init_modules.append(temp)
     logging.info(f"Ordered init modules: {ordered_init_modules}")
 
+    if args.custom_quantizer:
+        quantizer = NFQuantizer(num_bits=args.bits, device="cuda", method="normal", block_size=64)
+    else:
+        assert args.bits == 4, "bitsandbytes only supports NF4."
+        quantizer = None
     for modules in ordered_init_modules:
         initialize_lora(
             gold_model,
@@ -373,7 +390,8 @@ def main(args):
             modules,
             args.lora_rank,
             num_samples=args.num_samples,
-            max_length=args.max_length
+            max_length=args.max_length,
+            quantizer=quantizer,
         )
 
     # Save
