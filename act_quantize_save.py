@@ -345,6 +345,18 @@ def arg_parse():
         action='store_true',
         help="Use custom quantizer instead of bitsandbytes"
     )
+    parser.add_argument(
+        "--quantized_method",
+        choices=['normal', 'uniform'],
+        type=str,
+        help="Distribution of the quantized weight"
+    )
+    parser.add_argument(
+        "--block_size",
+        type=int,
+        default=64,
+        help="Block size for the quantization"
+    )
     args = parser.parse_args()
     return args
 
@@ -376,7 +388,12 @@ def main(args):
 
     if args.custom_quantizer:
         assert args.bits in [2, 4, 8], "Only supports bits of 2, 4 and 8."
-        quantizer = NFQuantizer(num_bits=args.bits, device="cuda", method="normal", block_size=64)
+        quantizer = NFQuantizer(
+            num_bits=args.bits,
+            device="cuda",
+            method=args.quantized_method,
+            block_size=args.block_size
+        )
     else:
         assert args.bits == 4, "bitsandbytes only supports NF4."
         quantizer = None
