@@ -375,6 +375,7 @@ def main(args):
     logging.info(f"Ordered init modules: {ordered_init_modules}")
 
     if args.custom_quantizer:
+        assert args.bits in [2, 4, 8], "Only supports bits of 2, 4 and 8."
         quantizer = NFQuantizer(num_bits=args.bits, device="cuda", method="normal", block_size=64)
     else:
         assert args.bits == 4, "bitsandbytes only supports NF4."
