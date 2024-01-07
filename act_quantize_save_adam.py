@@ -245,6 +245,7 @@ def initialize_lora(
             loss = loss_func(gold_outputs[index:index + args.batch_size, ].to("cuda").float(), lora_out)
             if not math.isfinite(loss.item()):
                 print("Loss is NAN, stopping training")
+                continue
 
             loss_list.append(loss.detach().cpu())
             loss.backward()
