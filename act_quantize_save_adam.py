@@ -234,6 +234,7 @@ def initialize_lora(
     optimizer = torch.optim.AdamW(lora_layer.parameters(), lr=args.lr, weight_decay=args.wd)
 
     logging.info(module)
+    loss_func = torch.nn.MSELoss()
     for epoch in range(args.epochs):
         loss_list = []
         for j in range(args.num_samples // args.batch_size):
