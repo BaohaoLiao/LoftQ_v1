@@ -233,7 +233,7 @@ def initialize_lora(
     lora_layer.lora_B.default.weight.requires_grad = True
     optimizer = torch.optim.AdamW(lora_layer.parameters(), lr=args.lr, weight_decay=args.wd)
 
-    logging.info(module)
+    logging.info(f"=============={module}==============")
     loss_func = torch.nn.MSELoss()
     for epoch in range(args.epochs):
         loss_list = []
