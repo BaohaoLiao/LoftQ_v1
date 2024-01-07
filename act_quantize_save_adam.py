@@ -381,7 +381,7 @@ def main(args):
                         "model.layers.0.mlp.gate_proj", "model.layers.0.mlp.up_proj",
                         "model.layers.0.mlp.down_proj"]
     ordered_init_modules = []
-    for l in [0]: #range(gold_model.config.num_hidden_layers):
+    for l in range(gold_model.config.num_hidden_layers):
         tmp = []
         for module in ordered_modules:
             tmp.append(module.replace(".0.", f".{l}."))
