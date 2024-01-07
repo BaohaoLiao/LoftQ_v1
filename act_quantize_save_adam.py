@@ -250,7 +250,9 @@ def initialize_lora(
             loss_list.append(loss.detach().cpu())
             loss.backward()
             optimizer.step()
-        logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()}")
+        logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
+                     f"{torch.norm(weight.to('cpu') - deq_weight.to('cpu'))} vs "
+                     f"{torch.norm(weight.to('cpu') - deq_weight.to('cpu') - lora_layer.scaling['default'] * lora_layer.lora_B.default.weight @ lora_layer.lora_A.default.weight)}")
 
     lora_layer.to(device=args.lora_model_device, dtype=torch.bfloat16)
 
