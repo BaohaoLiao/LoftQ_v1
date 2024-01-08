@@ -84,7 +84,7 @@ def print_model(model, name):
 def load_model_and_tokenizer(args):
     logging.info("Loading gold model ...")
     gold_model = AutoModelForCausalLM.from_pretrained(
-        args.model_name_or_path,
+        args.gold_model_name_or_path,
         torch_dtype=torch.bfloat16,
         use_auth_token=args.token,
         device_map=args.gold_model_device,
@@ -94,20 +94,29 @@ def load_model_and_tokenizer(args):
     logging.info("Loading lora model ...")
     target_modules = ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'up_proj', 'down_proj', 'gate_proj']
     lora_model = AutoModelForCausalLM.from_pretrained(
-        args.model_name_or_path,
+        args.lora_model_name_or_path,
         torch_dtype=torch.bfloat16,
         use_auth_token=args.token,
         device_map=args.lora_model_device,
     )
-    lora_config = LoraConfig(
-        task_type=TaskType.CAUSAL_LM,
-        inference_mode=False,
-        r=args.lora_rank,
-        lora_alpha=args.lora_alpha,
-        lora_dropout=args.lora_dropout,
-        target_modules=target_modules
-    )
-    lora_model = get_peft_model(lora_model, lora_config)
+    if args.init_from_loftq:
+        lora_model = PeftModel.from_pretrained(
+            lora_model,
+            args.lora_model_name_or_path,
+            subfolder='loftq_init',
+            is_trainable=True,
+            token=args.token,
+        )
+    else:
+        lora_config = LoraConfig(
+            task_type=TaskType.CAUSAL_LM,
+            inference_mode=False,
+            r=args.lora_rank,
+            lora_alpha=args.lora_alpha,
+            lora_dropout=args.lora_dropout,
+            target_modules=target_modules
+        )
+        lora_model = get_peft_model(lora_model, lora_config)
     lora_model.eval()
 
     logging.info("Loading tokenizer ...")
@@ -118,7 +127,7 @@ def load_model_and_tokenizer(args):
         "trust_remote_code": False,
         "token": args.token,
     }
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, **tokenizer_kwargs)
+    tokenizer = AutoTokenizer.from_pretrained(args.gold_model_name_or_path, **tokenizer_kwargs)
     return gold_model, lora_model, tokenizer
 
 
@@ -176,7 +185,6 @@ def initialize_lora(
     config,
     gold_model,
     lora_model,
-    tokenizer,
     dataloader,
     module,
     quantizer=None,
@@ -208,8 +216,11 @@ def initialize_lora(
     for n, m in lora_model.named_modules():
         if n == lora_module:
             lora_layer = m
+    for n, m in gold_model.named_modules():
+        if n == module:
+            gold_layer = m
 
-    weight = lora_layer.weight.clone()
+    weight = gold_layer.weight.clone()
     if quantizer is None:
         q_weight = bnb.nn.Params4bit(
             weight.to("cpu"),
@@ -225,7 +236,9 @@ def initialize_lora(
     else:
         q_weight, max_abs, shape = quantizer.quantize_block(weight)
         deq_weight = quantizer.dequantize_block(q_weight, max_abs, shape)
-    lora_layer.weight.data = deq_weight.to(dtype=torch.bfloat16, device=args.lora_model_device)
+
+    if not args.init_from_loftq:
+        lora_layer.weight.data = deq_weight.to(dtype=torch.bfloat16, device=args.lora_model_device)
 
     with torch.no_grad():
         lora_layer.float().cuda()
@@ -260,7 +273,14 @@ def initialize_lora(
 def arg_parse():
     parser = argparse.ArgumentParser(description="Quantize a model")
     parser.add_argument(
-        "--model_name_or_path",
+        "--gold_model_name_or_path",
+        type=str,
+        default=None,
+        required=True,
+        help="The name or path of the fp32/16 model",
+    )
+    parser.add_argument(
+        "--lora_model_name_or_path",
         type=str,
         default=None,
         required=True,
@@ -371,6 +391,10 @@ def arg_parse():
         type=int,
         default=1,
     )
+    parser.add_argument(
+        "--init_from_loftq",
+        action='store_true',
+    )
     args = parser.parse_args()
     return args
 
@@ -408,7 +432,6 @@ def main(args):
             gold_model.config,
             gold_model,
             lora_model,
-            tokenizer,
             dataloader,
             module,
             quantizer=quantizer,
@@ -418,7 +441,7 @@ def main(args):
     base_model = lora_model.get_base_model()
 
     # Save Quantized model
-    model_name = args.model_name_or_path.split("/")[-1] + \
+    model_name = args.gold_model_name_or_path.split("/")[-1] + \
                  f"-{args.bits}bit" + \
                  f"-{args.lora_rank}rank" + \
                  f"-{args.lora_dropout}dropout"
