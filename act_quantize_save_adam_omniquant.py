@@ -223,17 +223,21 @@ def initialize_lora(
             gold_layer = m
 
     weight = gold_layer.weight.clone()
-    q_weight = bnb.nn.Params4bit(
-        weight.to("cpu"),
-        requires_grad=False,
-        compress_statistics=False,
-        quant_type="nf4"
-    ).to("cuda")
-    deq_weight = bnb.functional.dequantize_4bit(
-        q_weight.data,
-        q_weight.quant_state,
-        quant_type="nf4"
-    )
+    if quantizer is None:
+        q_weight = bnb.nn.Params4bit(
+            weight.to("cpu"),
+            requires_grad=False,
+            compress_statistics=False,
+            quant_type="nf4"
+        ).to("cuda")
+        deq_weight = bnb.functional.dequantize_4bit(
+            q_weight.data,
+            q_weight.quant_state,
+            quant_type="nf4"
+        )
+    else:
+        q_weight, max_abs, shape = quantizer.quantize_block(weight)
+        deq_weight = quantizer.dequantize_block(q_weight, max_abs, shape)
 
     logging.info(f"=============={module}==============")
     with torch.no_grad():
@@ -263,7 +267,7 @@ def initialize_lora(
             optimizer.step()
         logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
                      f"{torch.norm(weight - deq_weight)} vs "
-                     f"{torch.norm(weight - deq_weight - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
+                     f"{torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
 
     ori_lora_layer.weight.data = lora_layer.weight_quantizer(ori_lora_layer.weight.clone()).to(dtype=torch.bfloat16)
 
