@@ -235,6 +235,7 @@ def initialize_lora(
         quant_type="nf4"
     )
 
+    logging.info(f"=============={module}==============")
     with torch.no_grad():
         lora_layer.float().cuda()
     logging.info("Trainable parameters:")
@@ -244,7 +245,6 @@ def initialize_lora(
 
     optimizer = torch.optim.AdamW(lora_layer.parameters(), lr=args.lr, weight_decay=args.wd)
 
-    logging.info(f"=============={module}==============")
     loss_func = torch.nn.MSELoss()
     for epoch in range(args.epochs):
         loss_list = []
