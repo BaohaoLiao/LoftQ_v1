@@ -24,7 +24,7 @@ import torch
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import LoraConfig, TaskType, get_peft_model, tuners
+from peft import LoraConfig, TaskType, get_peft_model, tuners, PeftModel
 import bitsandbytes as bnb
 
 from utils import NFQuantizer
