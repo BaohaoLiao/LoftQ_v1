@@ -263,7 +263,7 @@ def initialize_lora(
             optimizer.step()
         logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
                      f"{torch.norm(weight - deq_weight)} vs "
-                     f"{torch.norm(weight - deq_weight - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_.weight)}")
+                     f"{torch.norm(weight - deq_weight - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
 
     ori_lora_layer.weight.data = lora_layer.weight_quantizer(ori_lora_layer.weight.clone()).to(dtype=torch.bfloat16)
 
