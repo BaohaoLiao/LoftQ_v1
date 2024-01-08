@@ -274,8 +274,8 @@ def initialize_lora(
     logging.info(gold_layer.weight)
 
     logging.info(lora_layer.weight)
-    logging.info(lora_layer.lora_A.default.weight)
-    logging.info(lora_layer.lora_B.default.weight)
+    logging.info(lora_layer.lora_A_weight)
+    logging.info(lora_layer.lora_B_weight)
 
     logging.info(lora_model.base_model.model.model.layers[0].self_attn.q_proj.weight)
     logging.info(lora_model.base_model.model.model.layers[0].self_attn.q_proj.lora_A.default.weight)
