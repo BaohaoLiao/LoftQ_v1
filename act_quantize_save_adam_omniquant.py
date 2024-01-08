@@ -214,10 +214,19 @@ def initialize_lora(
             _input = obtain_lora_input(lora_model, args.lora_model_device, batch[0], lora_module)
             lora_inputs[i] = _input[lora_module]
 
+    weight_quant_params = {
+        "n_bits": args.bits,
+        "per_channel_axes": [0],
+        "symmetric": False,
+        "dynamic_method": "per_channel",
+        "group_size": args.block_size,
+        "lwc": True
+    }
+
     for n, m in lora_model.named_modules():
         if n == lora_module:
             ori_lora_layer = m
-            lora_layer = QuantLinear(ori_lora_layer)
+            lora_layer = QuantLinear(ori_lora_layer, weight_quant_params)
     for n, m in gold_model.named_modules():
         if n == module:
             gold_layer = m

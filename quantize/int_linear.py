@@ -145,21 +145,11 @@ class UniformAffineQuantizer(nn.Module):
         del self.round_zero_point
 
 
-WEIGHT_QUANT_PARAMS = {
-    "n_bits": 2,
-    "per_channel_axes": [0],
-    "symmetric": False,
-    "dynamic_method": "per_channel",
-    "group_size": 128,
-    "lwc": True
-}
-
-
 class QuantLinear(nn.Module):
     def __init__(
         self,
         org_module: lora.Linear,
-        weight_quant_params=WEIGHT_QUANT_PARAMS,
+        weight_quant_params: dict(),
     ):
         super().__init__()
         self.fwd_func = F.linear
