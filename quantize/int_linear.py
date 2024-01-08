@@ -146,7 +146,7 @@ class UniformAffineQuantizer(nn.Module):
 
 
 WEIGHT_QUANT_PARAMS = {
-    "n_bits": 4,
+    "n_bits": 2,
     "per_channel_axes": [0],
     "symmetric": False,
     "dynamic_method": "per_channel",
