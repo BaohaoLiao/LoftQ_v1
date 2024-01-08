@@ -272,7 +272,7 @@ def initialize_lora(
     ori_lora_layer.weight.data = lora_layer.weight_quantizer(ori_lora_layer.weight.clone()).to(dtype=torch.bfloat16)
 
     logging.info(gold_layer.weight)
-    logging.info(ori_lora_layer.weight, ori_lora_layer.lora_A.default.weight, ori_lora_layer.lora_B.default.weight)
+    logging.info(f"{ori_lora_layer.weight}, {ori_lora_layer.lora_A.default.weight}, {ori_lora_layer.lora_B.default.weight}")
 
 
 def arg_parse():
