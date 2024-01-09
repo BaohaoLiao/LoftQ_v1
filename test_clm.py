@@ -96,7 +96,8 @@ def evaluation(model_args, data_args):
     model = model.to('cuda')
     model.eval()
 
-    tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, token=model_args.token, use_fast=False)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(
+        model_args.model_name_or_path, token=model_args.token, use_fast=False)
 
     if data_args.dataset_name == "wikitext":
         testdata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
