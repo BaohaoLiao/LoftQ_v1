@@ -86,7 +86,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    data_name: str = field(default="wikitext", metadata={"help": "Dataset name."})
+    dataset_name: str = field(default="wikitext", metadata={"help": "Dataset name."})
     max_seq_length: int = field(default=2048, metadata={"help": "Maximum sequence length."})
 
 
@@ -129,7 +129,7 @@ def evaluation(model_args, data_args):
 
     tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, token=model_args.token, use_fast=False)
 
-    if data_args.data_name == "wikitext":
+    if data_args.dataset_name == "wikitext":
         testdata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
         testloader = tokenizer("\n\n".join(testdata['text']), return_tensors='pt')
     else:
@@ -149,7 +149,7 @@ def evaluation(model_args, data_args):
             nlls.append(neg_log_likelihood)
 
         ppl = torch.exp(torch.stack(nlls).sum() / (nsamples * seqlen))
-        logger.info(f'{data_args.data_name} : {ppl.item()}')
+        logger.info(f'{data_args.dataset_name} : {ppl.item()}')
 
 
 if __name__ == "__main__":
