@@ -28,11 +28,7 @@ from tqdm import tqdm
 
 import torch
 from datasets import load_dataset
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    HfArgumentParser,
-)
+import transformers
 from peft import PeftModel, get_peft_model, TaskType, LoraConfig
 
 
@@ -126,6 +122,6 @@ def evaluation(model_args, data_args):
 
 
 if __name__ == "__main__":
-    parser = HfArgumentParser((ModelArguments, DataArguments))
+    parser = transformers.HfArgumentParser((ModelArguments, DataArguments))
     model_args, data_args = parser.parse_args_into_dataclasses()
     evaluation(model_args, data_args)
