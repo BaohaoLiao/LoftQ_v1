@@ -93,7 +93,6 @@ def evaluation(model_args, data_args):
             token=model_args.token,
         )
     model.config.use_cache = False
-    model = model.to('cuda')
     model.eval()
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(
