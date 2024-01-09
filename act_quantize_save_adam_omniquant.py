@@ -132,20 +132,34 @@ def load_model_and_tokenizer(args):
     return gold_model, lora_model, tokenizer
 
 
-def get_dataloader(tokenizer, nsamples, seqlen, seed):
-    logging.info("Tokenize data ...")
-    traindata = load_dataset("monology/pile-uncopyrighted", data_files={"train": "val.jsonl.zst"})
-    trainenc = tokenizer("\n\n".join(traindata["train"]['text'][:(10 * nsamples)]), return_tensors='pt')
+def get_dataloader(tokenizer, nsamples, seqlen, seed, dataset_name):
+    logging.info(f"Tokenize {dataset_name} ...")
+    if dataset_name == "pile":
+        traindata = load_dataset("monology/pile-uncopyrighted", data_files={"train": "val.jsonl.zst"})
+        trainenc = tokenizer("\n\n".join(traindata["train"]['text'][:(10 * nsamples)]), return_tensors='pt')
 
-    random.seed(seed)
-    trainloader = []
-    for _ in range(nsamples):
-        i = random.randint(0, trainenc.input_ids.shape[1] - seqlen - 1)
-        j = i + seqlen
-        inp = trainenc.input_ids[:, i:j]
-        tar = inp.clone()
-        tar[:, :-1] = -100
-        trainloader.append((inp, tar))
+        random.seed(seed)
+        trainloader = []
+        for _ in range(nsamples):
+            i = random.randint(0, trainenc.input_ids.shape[1] - seqlen - 1)
+            j = i + seqlen
+            inp = trainenc.input_ids[:, i:j]
+            tar = inp.clone()
+            tar[:, :-1] = -100
+            trainloader.append((inp, tar))
+    elif dataset_name == "wikitext":
+        traindata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='train')
+        trainenc = tokenizer("\n\n".join(traindata['text']), return_tensors='pt')
+
+        random.seed(seed)
+        trainloader = []
+        for _ in range(nsamples):
+            i = random.randint(0, trainenc.input_ids.shape[1] - seqlen - 1)
+            j = i + seqlen
+            inp = trainenc.input_ids[:, i:j]
+            tar = inp.clone()
+            tar[:, :-1] = -100
+            trainloader.append((inp, tar))
     return trainloader
 
 @torch.no_grad()
@@ -414,13 +428,18 @@ def arg_parse():
         "--init_from_loftq",
         action='store_true',
     )
+    parser.add_argument(
+        "--cal_dataset_name",
+        type=str,
+        default="pile",
+    )
     args = parser.parse_args()
     return args
 
 
 def main(args):
     gold_model, lora_model, tokenizer = load_model_and_tokenizer(args)
-    dataloader = get_dataloader(tokenizer, args.num_samples, args.max_length, args.seed)
+    dataloader = get_dataloader(tokenizer, args.num_samples, args.max_length, args.seed, args.cal_dataset_name)
 
     ordered_modules = ["model.layers.0.self_attn.q_proj", "model.layers.0.self_attn.k_proj",
                         "model.layers.0.self_attn.v_proj", "model.layers.0.self_attn.o_proj",
