@@ -467,7 +467,7 @@ def main():
             model_args.model_name_or_path,
             low_cpu_mem_usage=True,
             torch_dtype=torch.bfloat16,
-            use_auth_token=model_args.token,
+            token=model_args.token,
         )
     else:
         model = AutoModelForCausalLM.from_pretrained(
