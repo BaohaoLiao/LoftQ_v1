@@ -21,6 +21,7 @@ https://huggingface.co/models?filter=text-generation
 """
 # You can also adapt this script on your own causal language modeling task. Pointers for this are left as comments.
 
+import random
 import logging
 from dataclasses import dataclass, field
 from typing import Optional
@@ -101,14 +102,34 @@ def evaluation(model_args, data_args):
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path, token=model_args.token, use_fast=False)
 
+    seqlen = data_args.max_seq_length
+
     if data_args.dataset_name == "wikitext":
+        logging.info("Loading wikitext test set ...")
         testdata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
         testloader = tokenizer("\n\n".join(testdata['text']), return_tensors='pt')
+    elif data_args.dataset_name == "c4":
+        logging.info("Loading C4 validation set ...")
+        valdata = load_dataset(
+            'allenai/c4', 'allenai--c4', data_files={'validation': 'en/c4-validation.00000-of-00008.json.gz'},
+            split='validation'
+        )
+        random.seed(0)
+        testloader = []
+        for _ in range(256):
+            while True:
+                i = random.randint(0, len(valdata) - 1)
+                tmp = tokenizer(valdata[i]['text'], return_tensors='pt')
+                if tmp.input_ids.shape[1] >= seqlen:
+                    break
+            i = random.randint(0, tmp.input_ids.shape[1] - seqlen - 1)
+            j = i + seqlen
+            testloader.append(tmp.input_ids[:, i:j])
+        testloader = torch.hstack(testloader)
     else:
         raise ValueError("Please specify the dataset name.")
 
     # Evaluate
-    seqlen = data_args.max_seq_length
     testenc = testloader.input_ids
     nsamples = testenc.numel() // seqlen
     nlls = []
