@@ -155,3 +155,4 @@ def evaluation(model_args, data_args):
 if __name__ == "__main__":
     parser = transformers.HfArgumentParser((ModelArguments, DataArguments))
     model_args, data_args = parser.parse_args_into_dataclasses()
+    evaluation(model_args, data_args)
