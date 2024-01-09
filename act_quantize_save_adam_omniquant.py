@@ -441,8 +441,8 @@ def main(args):
                 method=args.quantized_method,
                 block_size=args.block_size
             )
-        else:
-            quantizer = None
+    else:
+        quantizer = None
 
     for module in ordered_init_modules:
         initialize_lora(
