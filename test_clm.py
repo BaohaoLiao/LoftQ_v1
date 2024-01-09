@@ -61,6 +61,7 @@ class DataArguments:
 
 def evaluation(model_args, data_args):
     if model_args.full_precision:
+        logging.info("Loading FP16/32 model ...")
         model = transformers.AutoModelForCausalLM.from_pretrained(
             model_args.model_name_or_path,
             low_cpu_mem_usage=True,
@@ -69,6 +70,7 @@ def evaluation(model_args, data_args):
             device_map='auto',
         )
     else:
+        logging.info("Loading NF4 model ...")
         model = transformers.AutoModelForCausalLM.from_pretrained(
             model_args.model_name_or_path,
             low_cpu_mem_usage=True,
@@ -86,6 +88,7 @@ def evaluation(model_args, data_args):
     #       Peft Model       #
     ##########################
     if model_args.adapter_name_or_path is not None:
+        logging.info("Loading adapter weights ...")
         model = PeftModel.from_pretrained(
             model,
             model_args.adapter_name_or_path,
