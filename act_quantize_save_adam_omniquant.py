@@ -452,16 +452,14 @@ def main(args):
             tmp.append(module.replace(".0.", f".{l}."))
         ordered_init_modules += tmp
 
-    if args.custom_quantizer:
-        if args.bits in [2, 4, 8]:
-            quantizer = NFQuantizer(
-                num_bits=args.bits,
-                device="cuda",
-                method=args.quantized_method,
-                block_size=args.block_size
-            )
-    else:
-        quantizer = None
+    quantizer = None
+    if args.custom_quantizer and args.bits in [2, 4, 8]:
+        quantizer = NFQuantizer(
+            num_bits=args.bits,
+            device="cuda",
+            method=args.quantized_method,
+            block_size=args.block_size
+        )
 
     for module in ordered_init_modules:
         initialize_lora(
