@@ -20,7 +20,7 @@ Here is the full list of checkpoints on the hub that can be fine-tuned by this s
 https://huggingface.co/models?filter=text-generation
 """
 # You can also adapt this script on your own causal language modeling task. Pointers for this are left as comments.
-
+import os
 import random
 import logging
 from dataclasses import dataclass, field
@@ -58,6 +58,7 @@ class ModelArguments:
 class DataArguments:
     dataset_name: str = field(default="wikitext", metadata={"help": "Dataset name."})
     max_seq_length: int = field(default=2048, metadata={"help": "Maximum sequence length."})
+    cached_file: str = field(default=None, metadata={"help": "Cached tokenized data."})
 
 
 def evaluation(model_args, data_args):
@@ -104,30 +105,38 @@ def evaluation(model_args, data_args):
 
     seqlen = data_args.max_seq_length
 
-    if data_args.dataset_name == "wikitext":
-        logging.info("Loading wikitext test set ...")
-        testdata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
-        testloader = tokenizer("\n\n".join(testdata['text']), return_tensors='pt').input_ids
-    elif data_args.dataset_name == "c4":
-        logging.info("Loading C4 validation set ...")
-        valdata = load_dataset(
-            'allenai/c4', data_files={'validation': 'en/c4-validation.00000-of-00008.json.gz'},
-            split='validation'
-        )
-        random.seed(0)
-        testloader = []
-        for _ in range(256):
-            while True:
-                i = random.randint(0, len(valdata) - 1)
-                tmp = tokenizer(valdata[i]['text'], return_tensors='pt')
-                if tmp.input_ids.shape[1] >= seqlen:
-                    break
-            i = random.randint(0, tmp.input_ids.shape[1] - seqlen - 1)
-            j = i + seqlen
-            testloader.append(tmp.input_ids[:, i:j])
-        testloader = torch.hstack(testloader)
+    assert data_args.cached_file is not None, "Please specify the cached data file"
+    if os.path.exists(data_args.cached_file):
+        logger.info(f"Loading tokenized calibration data from {data_args.cached_file} ...")
+        testloader = torch.load(data_args.cached_file)
     else:
-        raise ValueError("Please specify the dataset name.")
+        if data_args.dataset_name == "wikitext":
+            logging.info("Loading wikitext test set ...")
+            testdata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
+            testloader = tokenizer("\n\n".join(testdata['text']), return_tensors='pt').input_ids
+        elif data_args.dataset_name == "c4":
+            logging.info("Loading C4 validation set ...")
+            valdata = load_dataset(
+                'allenai/c4', data_files={'validation': 'en/c4-validation.00000-of-00008.json.gz'},
+                split='validation'
+            )
+            random.seed(0)
+            testloader = []
+            for _ in range(256):
+                while True:
+                    i = random.randint(0, len(valdata) - 1)
+                    tmp = tokenizer(valdata[i]['text'], return_tensors='pt')
+                    if tmp.input_ids.shape[1] >= seqlen:
+                        break
+                i = random.randint(0, tmp.input_ids.shape[1] - seqlen - 1)
+                j = i + seqlen
+                testloader.append(tmp.input_ids[:, i:j])
+            testloader = torch.hstack(testloader)
+        else:
+            raise ValueError("Please specify the dataset name.")
+
+        logger.info(f"Saving tokenized calibration data to {data_args.cached_file} ...")
+        torch.save(testloader, data_args.cached_file)
 
     # Evaluate
     nsamples = testloader.numel() // seqlen
