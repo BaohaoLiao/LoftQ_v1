@@ -383,6 +383,7 @@ def main():
             print(model.deberta.load_state_dict(dic_deberta, strict=False))
     model = model.to(device)
     utils.show_model_stats(model, mark_only_lora_as_trainable=True)
+    logging.info(model)
 
 
     # Preprocessing the datasets
