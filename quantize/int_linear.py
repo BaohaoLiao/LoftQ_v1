@@ -154,6 +154,14 @@ class QuantLinear(nn.Module):
         super().__init__()
         self.fwd_func = F.linear
         self.register_buffer('weight', org_module.weight)
+        try:
+            # Llama don't have the variable of bias
+            if org_module.bias is not None:
+                self.register_buffer('bias', org_module.bias)
+            else:
+                self.bias = None
+        except:
+            self.bias = None
 
         self.lora_A_weight = org_module.lora_A.default.weight
         self.lora_B_weight = org_module.lora_B.default.weight
@@ -166,7 +174,6 @@ class QuantLinear(nn.Module):
 
     def forward(self, input: torch.Tensor):
         weight = self.weight_quantizer(self.weight)
-
-        out1 = self.fwd_func(input, weight)
+        out1 = self.fwd_func(input, weight, self.bias)
         out2 = self.fwd_func(self.fwd_func(input, self.lora_A_weight), self.lora_B_weight)
         return out1 + self.scaling * out2

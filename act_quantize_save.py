@@ -90,7 +90,7 @@ def load_model_and_tokenizer(args):
     gold_model.eval()
 
     logging.info("Loading lora model ...")
-    target_modules = ['q_proj', 'k_proj', 'v_proj', 'o_proj', 'up_proj', 'down_proj', 'gate_proj']
+    target_modules = ["query_proj", "key_proj", "value_proj", "dense"]
     lora_model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
         torch_dtype=torch.bfloat16,
