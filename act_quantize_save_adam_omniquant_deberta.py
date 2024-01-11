@@ -430,6 +430,9 @@ def arg_parse():
 
 def main(args):
     gold_model, lora_model, tokenizer = load_model_and_tokenizer(args)
+    logging.info("Lora model:")
+    logging.info(lora_model)
+
     dataloader = get_dataloader(tokenizer, args.num_samples, args.max_length, args.seed, args.cal_dataset_name)
 
     ordered_modules = [
