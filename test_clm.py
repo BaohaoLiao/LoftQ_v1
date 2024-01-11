@@ -130,7 +130,7 @@ def evaluation(model_args, data_args):
         raise ValueError("Please specify the dataset name.")
 
     # Evaluate
-    nsamples = testenc.numel() // seqlen
+    nsamples = testloader.numel() // seqlen
     nlls = []
     with torch.no_grad():
         for i in tqdm(range(nsamples)):
