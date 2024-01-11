@@ -107,7 +107,7 @@ def evaluation(model_args, data_args):
     if data_args.dataset_name == "wikitext":
         logging.info("Loading wikitext test set ...")
         testdata = load_dataset('wikitext', 'wikitext-2-raw-v1', split='test')
-        testloader = tokenizer("\n\n".join(testdata['text']), return_tensors='pt')
+        testloader = tokenizer("\n\n".join(testdata['text']), return_tensors='pt').input_ids
     elif data_args.dataset_name == "c4":
         logging.info("Loading C4 validation set ...")
         valdata = load_dataset(
@@ -130,12 +130,11 @@ def evaluation(model_args, data_args):
         raise ValueError("Please specify the dataset name.")
 
     # Evaluate
-    testenc = testloader.input_ids
     nsamples = testenc.numel() // seqlen
     nlls = []
     with torch.no_grad():
         for i in tqdm(range(nsamples)):
-            batch = testenc[:, (i * seqlen): ((i + 1) * seqlen)].to(model.device)
+            batch = testloader[:, (i * seqlen): ((i + 1) * seqlen)].to(model.device)
             outputs = model(input_ids=batch, labels=batch)
             loss = outputs[0]
             neg_log_likelihood = loss.float() * seqlen
