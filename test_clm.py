@@ -107,7 +107,7 @@ def evaluation(model_args, data_args):
 
     assert data_args.cached_file is not None, "Please specify the cached data file"
     if os.path.exists(data_args.cached_file):
-        logger.info(f"Loading tokenized calibration data from {data_args.cached_file} ...")
+        logging.info(f"Loading tokenized calibration data from {data_args.cached_file} ...")
         testloader = torch.load(data_args.cached_file)
     else:
         if data_args.dataset_name == "wikitext":
@@ -135,7 +135,7 @@ def evaluation(model_args, data_args):
         else:
             raise ValueError("Please specify the dataset name.")
 
-        logger.info(f"Saving tokenized calibration data to {data_args.cached_file} ...")
+        logging.info(f"Saving tokenized calibration data to {data_args.cached_file} ...")
         torch.save(testloader, data_args.cached_file)
 
     # Evaluate
