@@ -151,6 +151,7 @@ def get_dataloader(tokenizer, nsamples, seqlen, seed, dataset_name):
             tar = inp.clone()
             tar[:, :-1] = -100
             trainloader.append((inp, tar))
+    logging.info(f"Finished tokenization")
     return trainloader
 
 @torch.no_grad()
