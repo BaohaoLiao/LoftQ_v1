@@ -446,6 +446,8 @@ def main(args):
         for module in ordered_modules:
             tmp.append(module.replace(".0.", f".{l}."))
         ordered_init_modules += tmp
+    logging.info("Initialized orders:")
+    logging.info(ordered_init_modules)
 
     quantizer = None
     if args.custom_quantizer and args.bits in [2, 4, 8]:
