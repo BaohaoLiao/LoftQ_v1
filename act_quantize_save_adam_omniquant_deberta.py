@@ -162,6 +162,7 @@ def obtain_gold_output(gold_model, gold_model_device, input_ids, quantized_modul
 
     hooks = []
     for name, m in gold_model.named_modules():
+        print(name, quantized_module)
         if isinstance(m, nn.Linear) and (name == quantized_module):
             hooks.append(m.register_forward_hook(functools.partial(save_act_hook, name=name)))
 
@@ -216,7 +217,6 @@ def initialize_lora(
     with torch.no_grad():
         for i, batch in enumerate(dataloader):
             _output = obtain_gold_output(gold_model, args.gold_model_device, batch[0], module)
-            print(_output)
             gold_outputs[i] = _output[module]
             _input = obtain_lora_input(lora_model, args.lora_model_device, batch[0], lora_module)
             lora_inputs[i] = _input[lora_module]
