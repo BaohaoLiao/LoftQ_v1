@@ -163,8 +163,6 @@ class QuantLinear(nn.Module):
         except:
             self.bias = None
 
-        print(self.bias)
-
         self.lora_A_weight = org_module.lora_A.default.weight
         self.lora_B_weight = org_module.lora_B.default.weight
         self.scaling = org_module.scaling["default"]
@@ -175,6 +173,7 @@ class QuantLinear(nn.Module):
         self.weight_quantizer = UniformAffineQuantizer(**weight_quant_params, shape=org_module.weight.shape)
 
     def forward(self, input: torch.Tensor):
+        print(self.bias)
         weight = self.weight_quantizer(self.weight)
         out1 = self.fwd_func(input, weight, self.bias)
         out2 = self.fwd_func(self.fwd_func(input, self.lora_A_weight), self.lora_B_weight)
