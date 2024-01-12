@@ -216,6 +216,7 @@ def initialize_lora(
     with torch.no_grad():
         for i, batch in enumerate(dataloader):
             _output = obtain_gold_output(gold_model, args.gold_model_device, batch[0], module)
+            print(_output)
             gold_outputs[i] = _output[module]
             _input = obtain_lora_input(lora_model, args.lora_model_device, batch[0], lora_module)
             lora_inputs[i] = _input[lora_module]
