@@ -410,7 +410,7 @@ def main():
         ignore_mismatched_sizes=model_args.ignore_mismatched_sizes,
     )
     if model_args.adapter_name_or_path is not None:
-        model = PeftModel.from_pretrained(
+        model = peft.PeftModel.from_pretrained(
             model,
             model_args.adapter_name_or_path,
             is_trainable=True,
