@@ -154,13 +154,9 @@ class QuantLinear(nn.Module):
         super().__init__()
         self.fwd_func = F.linear
         self.register_buffer('weight', org_module.weight)
-        try:
-            # Llama don't have the variable of bias
-            if org_module.bias is not None:
-                self.register_buffer('bias', org_module.bias)
-            else:
-                self.bias = None
-        except:
+        if org_module.base_layer.bias is not None:
+            self.register_buffer('bias', org_module.base_layer.bias)
+        else:
             self.bias = None
 
         self.lora_A_weight = org_module.lora_A.default.weight
