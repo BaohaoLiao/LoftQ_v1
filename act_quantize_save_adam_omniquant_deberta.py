@@ -162,7 +162,6 @@ def obtain_gold_output(gold_model, gold_model_device, input_ids, quantized_modul
 
     hooks = []
     for name, m in gold_model.named_modules():
-        print(name, quantized_module)
         if isinstance(m, nn.Linear) and (name == quantized_module):
             hooks.append(m.register_forward_hook(functools.partial(save_act_hook, name=name)))
 
@@ -438,9 +437,9 @@ def main(args):
     dataloader = get_dataloader(tokenizer, args.num_samples, args.max_length, args.seed, args.cal_dataset_name)
 
     ordered_modules = [
-        "deberta.encoder.layer.0.attention.self.query_proj", "deberta.encoder.layer.0.attention.self.key_proj",
-        "deberta.encoder.layer.0.attention.self.value_proj", "deberta.encoder.layer.0.attention.output.dense",
-        "deberta.encoder.layer.0.intermediate.dense", "deberta.encoder.layer.0.output.dense"]
+        "encoder.layer.0.attention.self.query_proj", "encoder.layer.0.attention.self.key_proj",
+        "encoder.layer.0.attention.self.value_proj", "encoder.layer.0.attention.output.dense",
+        "encoder.layer.0.intermediate.dense", "encoder.layer.0.output.dense"]
     ordered_init_modules = []
     for l in range(gold_model.config.num_hidden_layers):
         tmp = []
