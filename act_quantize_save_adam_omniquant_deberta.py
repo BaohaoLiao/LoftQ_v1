@@ -114,7 +114,7 @@ def load_model_and_tokenizer(args):
     logging.info("Loading tokenizer ...")
     tokenizer_kwargs = {
         "cache_dir": None,
-        "use_fast": True,
+        "use_fast": False,
         "revision": "main",
         "trust_remote_code": False,
         "token": args.token,
