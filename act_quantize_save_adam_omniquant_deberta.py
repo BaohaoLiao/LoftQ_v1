@@ -233,6 +233,7 @@ def initialize_lora(
         if n == lora_module:
             ori_lora_layer = m
             lora_layer = QuantLinear(ori_lora_layer, weight_quant_params)
+            logging.info(lora_layer)
     for n, m in gold_model.named_modules():
         if n == module:
             gold_layer = m
