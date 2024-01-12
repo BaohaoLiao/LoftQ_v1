@@ -84,7 +84,7 @@ def print_model(model, name):
 
 def load_model_and_tokenizer(args):
     logging.info("Loading gold model ...")
-    gold_model = transformers.AutoModel.from_pretrained(
+    gold_model = transformers.AutoModelForSequenceClassification.from_pretrained(
         args.gold_model_name_or_path,
         torch_dtype=torch.bfloat16,
         use_auth_token=args.token,
@@ -94,7 +94,7 @@ def load_model_and_tokenizer(args):
 
     logging.info("Loading lora model ...")
     target_modules = ["query_proj", "key_proj", "value_proj", "output.dense", "intermediate.dense"]
-    lora_model = transformers.AutoModel.from_pretrained(
+    lora_model = transformers.AutoModelForSequenceClassification.from_pretrained(
         args.lora_model_name_or_path,
         torch_dtype=torch.bfloat16,
         use_auth_token=args.token,
