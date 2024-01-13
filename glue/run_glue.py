@@ -373,7 +373,7 @@ def main():
                          args=args,
                          )
 
-    if not args.decompose:
+    if not args.decompose and not args.qlora:
         if args.eval:
             dic = torch.load(args.decomposed_pretrained_ckpt_path)
             print(model.load_state_dict(dic, strict=False))
