@@ -416,8 +416,8 @@ def main():
             is_trainable=True,
             token=model_args.token,
         )
-        logging.info(f"{model.print_trainable_parameters()}")
-    logging.info(model)
+        logger.info(f"{model.print_trainable_parameters()}")
+    logger.info(model)
 
     # Preprocessing the raw_datasets
     if data_args.task_name is not None:
