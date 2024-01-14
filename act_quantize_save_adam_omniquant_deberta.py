@@ -84,7 +84,7 @@ def print_model(model, name):
 
 def load_model_and_tokenizer(args):
     logging.info("Loading gold model ...")
-    gold_model = transformers.AutoModelForSequenceClassification.from_pretrained(
+    gold_model = transformers.AutoModel.from_pretrained(
         args.gold_model_name_or_path,
         torch_dtype=torch.bfloat16,
         use_auth_token=args.token,
@@ -94,7 +94,7 @@ def load_model_and_tokenizer(args):
 
     logging.info("Loading lora model ...")
     target_modules = ["query_proj", "key_proj", "value_proj", "output.dense", "intermediate.dense"]
-    lora_model = transformers.AutoModelForSequenceClassification.from_pretrained(
+    lora_model = transformers.AutoModel.from_pretrained(
         args.lora_model_name_or_path,
         torch_dtype=torch.bfloat16,
         use_auth_token=args.token,
@@ -437,9 +437,9 @@ def main(args):
     dataloader = get_dataloader(tokenizer, args.num_samples, args.max_length, args.seed, args.cal_dataset_name)
 
     ordered_modules = [
-        "deberta.encoder.layer.0.attention.self.query_proj", "deberta.encoder.layer.0.attention.self.key_proj",
-        "deberta.encoder.layer.0.attention.self.value_proj", "deberta.encoder.layer.0.attention.output.dense",
-        "deberta.encoder.layer.0.intermediate.dense", "deberta.encoder.layer.0.output.dense"]
+        "encoder.layer.0.attention.self.query_proj", "encoder.layer.0.attention.self.key_proj",
+        "encoder.layer.0.attention.self.value_proj", "encoder.layer.0.attention.output.dense",
+        "encoder.layer.0.intermediate.dense", "encoder.layer.0.output.dense"]
     ordered_init_modules = []
     for l in range(gold_model.config.num_hidden_layers):
         tmp = []
