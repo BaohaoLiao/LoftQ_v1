@@ -285,13 +285,20 @@ def initialize_lora(
             loss.backward()
             optimizer.step()
 
+        weight_diff = torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)
+        if epoch == 0:
+            init_weight_diff = weight_diff
+        if weight_diff > 1.2 * init_weight_diff:
+            print("Too large weight err, stopping training for better regularization.")
+            continue
+
         if args.bits in [2, 4, 8]:
             logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
                          f"{torch.norm(weight - deq_weight)} vs "
-                         f"{torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
+                         f"{weight_diff}")
         else:
             logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
-                         f"{torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
+                         f"{weight_diff}")
 
     ori_lora_layer.weight.data = lora_layer.weight_quantizer(ori_lora_layer.weight.clone()).to(dtype=torch.bfloat16)
 
