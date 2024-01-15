@@ -94,7 +94,7 @@ def load_model_and_tokenizer(args):
     gold_model.eval()
 
     logging.info("Loading lora model ...")
-    target_modules = ["query_proj", "key_proj", "value_proj", "output.dense", "intermediate.dense"]
+    target_modules = ["query", "key", "value", "output.dense", "intermediate.dense"]
     lora_model = transformers.AutoModelForSequenceClassification.from_pretrained(
         args.lora_model_name_or_path,
         torch_dtype=torch.bfloat16,
@@ -180,7 +180,6 @@ def obtain_lora_input(lora_model, lora_model_device, input_ids, quantized_module
     hooks = []
     for name, m in lora_model.named_modules():
         if isinstance(m, lora.Linear):
-            print("!!!", name)
         if isinstance(m, lora.Linear) and (name == quantized_module):
             hooks.append(m.register_forward_hook(functools.partial(save_act_hook, name=name)))
 
