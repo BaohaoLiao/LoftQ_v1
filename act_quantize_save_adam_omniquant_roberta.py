@@ -25,6 +25,7 @@ import torch.nn as nn
 from datasets import load_dataset
 import transformers
 from peft import LoraConfig, TaskType, get_peft_model, tuners, PeftModel
+from peft.tuners import lora
 import bitsandbytes as bnb
 
 from utils import NFQuantizer
@@ -179,8 +180,8 @@ def obtain_lora_input(lora_model, lora_model_device, input_ids, quantized_module
     hooks = []
     for name, m in lora_model.named_modules():
         if ".0." in name:
-            print("!!!", name, quantized_module, name == quantized_module, m.__dict__)
-        if isinstance(m, tuners.lora.Linear) and (name == quantized_module):
+            print("!!!", name, quantized_module, name == quantized_module)
+        if isinstance(m, lora.Linear) and (name == quantized_module):
             print("???", name, quantized_module)
             hooks.append(m.register_forward_hook(functools.partial(save_act_hook, name=name)))
 
