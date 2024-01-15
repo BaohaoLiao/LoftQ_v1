@@ -280,9 +280,8 @@ def initialize_lora(
             logging.info(n)
 
     optimizer = torch.optim.AdamW(
-        [{"params": lwc_parameters(lora_layer), "lr": args.lwc_lr},
-         {"params": lora_parameters(lora_layer), "lr": args.lora_lr}],
-        weight_decay=args.wd
+        [{"params": lwc_parameters(lora_layer), "lr": args.lwc_lr, "weight_decay": args.lwc_wd},
+         {"params": lora_parameters(lora_layer), "lr": args.lora_lr, "weight_decay": args.lora_wd}]
     )
 
     loss_func = torch.nn.MSELoss()
@@ -436,7 +435,13 @@ def arg_parse():
         help="Learning rate"
     )
     parser.add_argument(
-        "--wd",
+        "--lora_wd",
+        type=float,
+        default=0,
+        help="Weight decay"
+    )
+    parser.add_argument(
+        "--lwc_wd",
         type=float,
         default=0,
         help="Weight decay"
