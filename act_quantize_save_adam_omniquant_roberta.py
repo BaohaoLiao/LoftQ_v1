@@ -295,7 +295,7 @@ def initialize_lora(
             init_weight_diff = weight_diff
         if weight_diff > 1.2 * init_weight_diff: # 1.2 is threshold scale
             logging.info("Too large weight err, stopping training for better regularization.")
-            continue
+            break
 
         if args.bits in [2, 4, 8]:
             logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
