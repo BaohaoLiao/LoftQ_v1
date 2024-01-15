@@ -179,7 +179,6 @@ def obtain_lora_input(lora_model, lora_model_device, input_ids, quantized_module
 
     hooks = []
     for name, m in lora_model.named_modules():
-        if isinstance(m, lora.Linear):
         if isinstance(m, lora.Linear) and (name == quantized_module):
             hooks.append(m.register_forward_hook(functools.partial(save_act_hook, name=name)))
 
