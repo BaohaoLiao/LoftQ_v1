@@ -270,13 +270,18 @@ def initialize_lora(
 
     loss_func = torch.nn.MSELoss()
     for epoch in range(args.epochs):
+        # shuffle
+        perm = torch.randperm(args.num_samples)
+        shuffled_lora_inputs = lora_inputs[perm]
+        shuffled_gold_outputs = gold_outputs[perm]
+
         loss_list = []
         for j in range(args.num_samples // args.batch_size):
             optimizer.zero_grad()
 
             index = j * args.batch_size
-            lora_out = lora_layer(lora_inputs[index:index + args.batch_size, ].to("cuda").float())
-            loss = loss_func(gold_outputs[index:index + args.batch_size, ].to("cuda").float(), lora_out)
+            lora_out = lora_layer(shuffled_lora_inputs[index:index + args.batch_size, ].to("cuda").float())
+            loss = loss_func(shuffled_gold_outputs[index:index + args.batch_size, ].to("cuda").float(), lora_out)
             if not math.isfinite(loss.item()):
                 print("Loss is NAN, stopping training")
                 continue
@@ -438,6 +443,12 @@ def arg_parse():
 
 
 def main(args):
+    torch.manual_seed(args.seed)
+    # If using CUDA
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(args.seed)
+        torch.cuda.manual_seed_all(args.seed)  # for multi-GPU.
+
     gold_model, lora_model, tokenizer = load_model_and_tokenizer(args)
     logging.info("Lora model:")
     logging.info(lora_model)
