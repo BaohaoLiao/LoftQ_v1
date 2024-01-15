@@ -283,7 +283,7 @@ def initialize_lora(
             lora_out = lora_layer(shuffled_lora_inputs[index:index + args.batch_size, ].to("cuda").float())
             loss = loss_func(shuffled_gold_outputs[index:index + args.batch_size, ].to("cuda").float(), lora_out)
             if not math.isfinite(loss.item()):
-                print("Loss is NAN, stopping training")
+                logging.info("Loss is NAN, stopping training")
                 continue
 
             loss_list.append(loss.detach().cpu())
@@ -294,7 +294,7 @@ def initialize_lora(
         if epoch == 0:
             init_weight_diff = weight_diff
         if weight_diff > 1.2 * init_weight_diff: # 1.2 is threshold scale
-            print("Too large weight err, stopping training for better regularization.")
+            logging.info("Too large weight err, stopping training for better regularization.")
             continue
 
         if args.bits in [2, 4, 8]:

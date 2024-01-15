@@ -51,7 +51,7 @@ def unwrap_model(model, sub_module_name=".base_layer"):
         name_parent = ".".join(name.split(".")[:-1])
         name_child = name.split(".")[-1]
         sub_module = model.get_submodule(name_parent)
-        print(sub_module)
+        logging.info(sub_module)
 
         # replace with shell
         child = getattr(sub_module, name_child)
@@ -80,7 +80,7 @@ def print_model(model, name):
                     f"{param.max().item()}, "
                 )
             else:
-                print(f"{name}, {param.shape}, {param.device}, {param.dtype}, {param.requires_grad}")
+                logging.info(f"{name}, {param.shape}, {param.device}, {param.dtype}, {param.requires_grad}")
 
 def load_model_and_tokenizer(args):
     logging.info("Loading gold model ...")
@@ -277,7 +277,7 @@ def initialize_lora(
             lora_out = lora_layer(lora_inputs[index:index + args.batch_size, ].to("cuda").float())
             loss = loss_func(gold_outputs[index:index + args.batch_size, ].to("cuda").float(), lora_out)
             if not math.isfinite(loss.item()):
-                print("Loss is NAN, stopping training")
+                logging.info("Loss is NAN, stopping training")
                 continue
 
             loss_list.append(loss.detach().cpu())
