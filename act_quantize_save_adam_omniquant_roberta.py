@@ -286,6 +286,8 @@ def initialize_lora(
 
     loss_func = torch.nn.MSELoss()
     for epoch in range(args.epochs):
+        outer_flag = False
+
         # shuffle
         perm = torch.randperm(args.num_samples)
         shuffled_lora_inputs = lora_inputs[perm]
@@ -306,21 +308,25 @@ def initialize_lora(
             loss.backward()
             optimizer.step()
 
-        weight_diff = torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)
-        if epoch == 0:
-            init_weight_diff = weight_diff
-        if weight_diff > 1.15 * init_weight_diff: # 1.15 is threshold scale
-            logging.info("Too large weight err, stopping training for better regularization.")
-            break
+            weight_diff = torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)
+            if epoch == 0 and j == 0:
+                init_weight_diff = weight_diff
+
+            if weight_diff > 1.2 * init_weight_diff: # 1.15 is threshold scale
+                logging.info("Too large weight err, stopping training for better regularization.")
+                outer_flag = True
+                break
 
         if args.bits in [2, 4, 8]:
             logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
                          f"{torch.norm(weight - deq_weight)} vs "
-                         f"{weight_diff}")
+                         f"{torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
         else:
             logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
-                         f"{weight_diff}")
+                         f"{torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
 
+        if outer_flag:
+            break
     ori_lora_layer.weight.data = lora_layer.weight_quantizer(ori_lora_layer.weight.clone()).to(dtype=torch.bfloat16)
 
 
