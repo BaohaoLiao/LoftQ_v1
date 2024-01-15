@@ -293,7 +293,7 @@ def initialize_lora(
         weight_diff = torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)
         if epoch == 0:
             init_weight_diff = weight_diff
-        if weight_diff > 1.2 * init_weight_diff:
+        if weight_diff > 1.2 * init_weight_diff: # 1.2 is threshold scale
             print("Too large weight err, stopping training for better regularization.")
             continue
 
