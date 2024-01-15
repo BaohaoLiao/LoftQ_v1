@@ -320,9 +320,11 @@ def initialize_lora(
         if args.bits in [2, 4, 8]:
             logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
                          f"{torch.norm(weight - deq_weight)} vs "
+                         f"{init_weight_diff} vs "
                          f"{torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
         else:
             logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
+                         f"{init_weight_diff} vs "
                          f"{torch.norm(weight - lora_layer.weight_quantizer(ori_lora_layer.weight) - lora_layer.scaling * lora_layer.lora_B_weight @ lora_layer.lora_A_weight)}")
 
         if outer_flag:
