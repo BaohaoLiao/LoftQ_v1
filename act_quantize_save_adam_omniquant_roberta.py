@@ -191,7 +191,6 @@ def lwc_parameters(model):
     params = []
     for n, m in model.named_parameters():
         if n.find('bound_factor') > -1:
-            print(n)
             params.append(m)
     return iter(params)
 
@@ -199,7 +198,6 @@ def lora_parameters(model):
     params = []
     for n, m in model.named_parameters():
         if n.find('lora_') > -1:
-            print(n)
             params.append(m)
     return iter(params)
 
