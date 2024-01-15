@@ -187,6 +187,21 @@ def obtain_lora_input(lora_model, lora_model_device, input_ids, quantized_module
         hook.remove()
     return act_dicts
 
+def lwc_parameters(model):
+    params = []
+    for n, m in model.named_parameters():
+        if n.find('bound_factor') > -1:
+            print(n)
+            params.append(m)
+    return iter(params)
+
+def lora_parameters(model):
+    params = []
+    for n, m in model.named_parameters():
+        if n.find('lora_') > -1:
+            print(n)
+            params.append(m)
+    return iter(params)
 
 def initialize_lora(
     args,
@@ -266,7 +281,11 @@ def initialize_lora(
         if p.requires_grad:
             logging.info(n)
 
-    optimizer = torch.optim.AdamW(lora_layer.parameters(), lr=args.lr, weight_decay=args.wd)
+    optimizer = torch.optim.AdamW(
+        [{"params": lwc_parameters(lora_layer), "lr": args.lwc_lr},
+         {"params": lora_parameters(lora_layer), "lr": args.lora_lr}],
+        weight_decay=args.wd
+    )
 
     loss_func = torch.nn.MSELoss()
     for epoch in range(args.epochs):
@@ -407,7 +426,13 @@ def arg_parse():
         help="Block size for the quantization"
     )
     parser.add_argument(
-        "--lr",
+        "--lora_lr",
+        type=float,
+        default=0.01,
+        help="Learning rate"
+    )
+    parser.add_argument(
+        "--lwc_lr",
         type=float,
         default=0.01,
         help="Learning rate"
