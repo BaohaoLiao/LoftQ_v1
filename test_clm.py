@@ -116,7 +116,10 @@ def evaluation(model_args, data_args):
             testloader = tokenizer("\n\n".join(testdata['text']), return_tensors='pt').input_ids
         elif data_args.dataset_name == "c4":
             logging.info("Loading C4 validation set ...")
-            valdata = load_dataset('allenai/c4', data_files={'validation': 'en/c4-validation.00000-of-00008.json.gz'},)
+            valdata = load_dataset(
+                'allenai/c4', data_files={'validation': 'en/c4-validation.00000-of-00008.json.gz'},
+                split='validation'
+            )
             random.seed(0)
             testloader = []
             for _ in range(256):
