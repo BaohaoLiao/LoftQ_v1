@@ -285,7 +285,7 @@ def initialize_lora(
         if n == module:
             gold_layer = m
 
-    weight = gold_layer.weight.clone()
+    weight = gold_layer.weight.clone().to(args.lora_model_device)
     if args.bits in [2, 4, 8]:
         if quantizer is None:
             q_weight = bnb.nn.Params4bit(
