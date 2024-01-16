@@ -106,6 +106,7 @@ class NFQuantizer:
         weight_divabs = weight_divabs.unsqueeze(-1)  # (L, B, 1)
         L_reshaped = self.norm_lookup_table.reshape(1, -1)  # (1, 2**K)
 
+        print("!!!!!!!", weight_divabs.device, L_reshaped.device)
         abs_diff = torch.abs(weight_divabs - L_reshaped)  # (L, B, 2**K)
         qweight = torch.argmin(abs_diff, dim=-1)  # (L, B)
 
