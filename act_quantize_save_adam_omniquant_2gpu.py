@@ -285,7 +285,7 @@ def initialize_lora(
         if n == module:
             gold_layer = m
 
-    weight = gold_layer.weight.clone()
+    weight = gold_layer.weight.clone().to(args.lora_model_device)
     if args.bits in [2, 4, 8]:
         if quantizer is None:
             q_weight = bnb.nn.Params4bit(
@@ -293,7 +293,7 @@ def initialize_lora(
                 requires_grad=False,
                 compress_statistics=False,
                 quant_type="nf4"
-            ).to("cuda")
+            ).to(args.lora_model_device)
             deq_weight = bnb.functional.dequantize_4bit(
                 q_weight.data,
                 q_weight.quant_state,
@@ -307,7 +307,7 @@ def initialize_lora(
 
     logging.info(f"=============={module}==============")
     with torch.no_grad():
-        lora_layer.float().cuda()
+        lora_layer.float().to(args.lora_model_device)
     logging.info("Trainable parameters:")
     for n, p in lora_layer.named_parameters():
         if p.requires_grad:
@@ -330,8 +330,8 @@ def initialize_lora(
             optimizer.zero_grad()
 
             index = j * args.batch_size
-            lora_out = lora_layer(shuffled_lora_inputs[index:index + args.batch_size, ].to("cuda").float())
-            loss = loss_func(shuffled_gold_outputs[index:index + args.batch_size, ].to("cuda").float(), lora_out)
+            lora_out = lora_layer(shuffled_lora_inputs[index:index + args.batch_size, ].to(args.lora_model_device).float())
+            loss = loss_func(shuffled_gold_outputs[index:index + args.batch_size, ].to(args.lora_model_device).float(), lora_out)
             if not math.isfinite(loss.item()):
                 logging.info("Loss is NAN, stopping training")
                 continue
