@@ -497,6 +497,12 @@ def arg_parse():
 
 
 def main(args):
+    torch.manual_seed(args.seed)
+    # If using CUDA
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(args.seed)
+        torch.cuda.manual_seed_all(args.seed)  # for multi-GPU.
+
     gold_model, lora_model, tokenizer = load_model_and_tokenizer(args)
     dataloader = get_dataloader(tokenizer, args.num_samples, args.max_length, args.seed, args.cal_dataset_name)
 
