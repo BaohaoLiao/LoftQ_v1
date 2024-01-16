@@ -126,7 +126,8 @@ def load_model_and_tokenizer(args):
         "use_fast": False,
         "revision": "main",
         "trust_remote_code": False,
-        "token": args.token,
+        "use_auth_token": args.token
+        #"token": args.token,
     }
     tokenizer = AutoTokenizer.from_pretrained(args.gold_model_name_or_path, **tokenizer_kwargs)
     return gold_model, lora_model, tokenizer
