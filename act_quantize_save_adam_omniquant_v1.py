@@ -340,7 +340,7 @@ def initialize_lora(
             loss.backward()
             optimizer.step()
 
-        print(weight.device, lora_layer.device, ori_lora_layer.device)
+        print(weight.device, lora_layer.device, ori_lora_layer.device, lora_layer.lora_B_weight.device)
         if args.bits in [2, 4, 8]:
             logging.info(f"Epoch {epoch}: {torch.stack(loss_list).mean()} \t"
                          f"{torch.norm(weight - deq_weight)} vs "
