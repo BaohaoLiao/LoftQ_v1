@@ -480,6 +480,7 @@ def main():
         )
 
     if training_args.gradient_checkpointing:
+        model.use_cache = False
         logger.info("Use gradient checkpointing with LoRA.")
         if hasattr(model, "enable_input_require_grads"):
             model.enable_input_require_grads()
