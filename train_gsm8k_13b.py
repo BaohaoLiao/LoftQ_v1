@@ -224,7 +224,7 @@ def train():
         )
 
     if training_args.gradient_checkpointing:
-        logger.info("Use gradient checkpointing with LoRA.")
+        logging.info("Use gradient checkpointing with LoRA.")
         if hasattr(model, "enable_input_require_grads"):
             model.enable_input_require_grads()
         else:
