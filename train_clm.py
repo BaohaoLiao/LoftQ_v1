@@ -464,6 +464,7 @@ def main():
             low_cpu_mem_usage=True,
             torch_dtype=torch.bfloat16,
             token=model_args.token,
+            use_flash_attention_2=True,
         )
     else:
         model = AutoModelForCausalLM.from_pretrained(
