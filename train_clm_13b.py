@@ -461,7 +461,7 @@ def main():
     if model_args.full_precision:
         model = AutoModelForCausalLM.from_pretrained(
             model_args.model_name_or_path,
-            low_cpu_mem_usage=False,
+            low_cpu_mem_usage=True,
             torch_dtype=torch.bfloat16,
             token=model_args.token,
         )
