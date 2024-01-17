@@ -478,6 +478,18 @@ def main():
                 bnb_4bit_quant_type='nf4',
             ),
         )
+
+    if training_args.gradient_checkpointing:
+        logger.info("Use gradient checkpointing with LoRA.")
+        if hasattr(model, "enable_input_require_grads"):
+            model.enable_input_require_grads()
+            logger.info("111111111")
+        else:
+            logger.info("22222222")
+            def make_inputs_require_grad(module, input, output):
+                output.requires_grad_(True)
+            model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
+
     ##########################
     #       Peft Model       #
     ##########################
