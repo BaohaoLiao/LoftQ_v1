@@ -118,12 +118,14 @@ def evaluation(model_args, data_args):
     #       Peft Model       #
     ##########################
     if model_args.adapter_name_or_path is not None:
+        logging.info("Initialize LoRA in the default way ...")
         model = PeftModel.from_pretrained(model,
                                           model_args.adapter_name_or_path,
                                           is_trainable=False,
                                           token=model_args.token,
                                           )
     else:
+        logging.info(f"Initialize LoRA with weight from {model_args.model_name_or_path} ...")
         model = PeftModel.from_pretrained(model,
                                           model_args.model_name_or_path,
                                           subfolder='gsm8k',

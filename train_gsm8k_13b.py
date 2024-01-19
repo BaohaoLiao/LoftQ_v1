@@ -237,6 +237,7 @@ def train():
     #       Peft Model       #
     ##########################
     if model_args.lora_init:
+        logging.info("Initialize LoRA in the default way ...")
         task_type = TaskType.CAUSAL_LM
         target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "up_proj", "down_proj", "gate_proj"]
         lora_config = LoraConfig(
@@ -250,12 +251,14 @@ def train():
         )
         model = get_peft_model(model, lora_config)
     elif model_args.adapter_name_or_path is not None:
+        logging.info(f"Initialize LoRA with weight from {model_args.adapter_name_or_path} ...")
         model = PeftModel.from_pretrained(model,
                                           model_args.adapter_name_or_path,
                                           is_trainable=True,
                                           token=model_args.token,
                                           )
     else:
+        logging.info(f"Initialize LoRA with weight from {model_args.model_name_or_path} ...")
         model = PeftModel.from_pretrained(model,
                                           model_args.model_name_or_path,
                                           subfolder='loftq_init',
