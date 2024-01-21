@@ -192,6 +192,8 @@ def get_dataloader(tokenizer, nsamples, seqlen, seed, dataset_name):
             'allenai/c4', data_files={'train': 'en/c4-train.00000-of-01024.json.gz'}, split='train'
         )
 
+        print(traindata)
+        print(traindata[100]["text"])
         random.seed(seed)
         trainloader = []
         for _ in range(nsamples):
