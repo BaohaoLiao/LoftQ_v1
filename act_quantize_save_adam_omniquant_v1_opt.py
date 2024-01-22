@@ -267,14 +267,14 @@ def initialize_lora(
 ):
     if "fc1" in module:
         gold_outputs = torch.zeros(
-            (args.num_samples, args.max_length, config.intermediate_size), dtype=torch.bfloat16, device="cpu")
+            (args.num_samples, args.max_length, config.ffn_dim), dtype=torch.bfloat16, device="cpu")
         lora_inputs = torch.zeros(
             (args.num_samples, args.max_length, config.hidden_size), dtype=torch.bfloat16, device="cpu")
     elif "fc2" in module:
         gold_outputs = torch.zeros(
             (args.num_samples, args.max_length, config.hidden_size), dtype=torch.bfloat16, device="cpu")
         lora_inputs = torch.zeros(
-            (args.num_samples, args.max_length, config.intermediate_size), dtype=torch.bfloat16, device="cpu")
+            (args.num_samples, args.max_length, config.ffn_dim), dtype=torch.bfloat16, device="cpu")
     else:
         gold_outputs = torch.zeros(
             (args.num_samples, args.max_length, config.hidden_size), dtype=torch.bfloat16, device="cpu")
