@@ -265,12 +265,12 @@ def initialize_lora(
     module,
     quantizer=None,
 ):
-    if ("gate_proj" in module) or ("up_proj" in module):
+    if "fc1" in module:
         gold_outputs = torch.zeros(
             (args.num_samples, args.max_length, config.intermediate_size), dtype=torch.bfloat16, device="cpu")
         lora_inputs = torch.zeros(
             (args.num_samples, args.max_length, config.hidden_size), dtype=torch.bfloat16, device="cpu")
-    elif "down_proj" in module:
+    elif "fc2" in module:
         gold_outputs = torch.zeros(
             (args.num_samples, args.max_length, config.hidden_size), dtype=torch.bfloat16, device="cpu")
         lora_inputs = torch.zeros(
