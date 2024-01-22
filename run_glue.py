@@ -416,6 +416,10 @@ def main():
             is_trainable=True,
             token=model_args.token,
         )
+
+        for name, param in model.named_parameters():
+            if "pooler" in name:
+                param.requires_grad = True
         logger.info(f"{model.print_trainable_parameters()}")
 
     logger.info("Trainable parameters:")
