@@ -218,9 +218,9 @@ def obtain_gold_output(gold_model, gold_model_device, input_ids, quantized_modul
 
     hooks = []
     for name, m in gold_model.named_modules():
-        print(n, quantized_module)
+        print(name, quantized_module)
         if isinstance(m, nn.Linear) and (name == quantized_module):
-            print("!!!!!!!!", n, quantized_module)
+            print("!!!!!!!!", name, quantized_module)
             hooks.append(m.register_forward_hook(functools.partial(save_act_hook, name=name)))
 
     gold_model(input_ids.to(device=gold_model_device))
