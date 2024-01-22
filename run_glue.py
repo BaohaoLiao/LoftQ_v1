@@ -417,6 +417,11 @@ def main():
             token=model_args.token,
         )
         logger.info(f"{model.print_trainable_parameters()}")
+
+    logger.info("Trainable parameters:")
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            logger.info(name)
     logger.info(model)
 
     # Preprocessing the raw_datasets
