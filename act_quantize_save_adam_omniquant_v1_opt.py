@@ -218,9 +218,7 @@ def obtain_gold_output(gold_model, gold_model_device, input_ids, quantized_modul
 
     hooks = []
     for name, m in gold_model.named_modules():
-        print(name, quantized_module)
         if isinstance(m, nn.Linear) and (name == quantized_module):
-            print("!!!!!!!!", name, quantized_module)
             hooks.append(m.register_forward_hook(functools.partial(save_act_hook, name=name)))
 
     gold_model(input_ids.to(device=gold_model_device))
@@ -530,9 +528,9 @@ def main(args):
     gold_model, lora_model, tokenizer = load_model_and_tokenizer(args)
     dataloader = get_dataloader(tokenizer, args.num_samples, args.max_length, args.seed, args.cal_dataset_name)
 
-    ordered_modules = ["model.encoder.layers.0.self_attn.q_proj", "model.encoder.layers.0.self_attn.k_proj",
-                        "model.encoder.layers.0.self_attn.v_proj", "model.encoder.layers.0.self_attn.out_proj",
-                        "model.encoder.layers.0.fc1", "model.layers.0.fc2"]
+    ordered_modules = ["model.decoder.layers.0.self_attn.q_proj", "model.decoder.layers.0.self_attn.k_proj",
+                        "model.decoder.layers.0.self_attn.v_proj", "model.decoder.layers.0.self_attn.out_proj",
+                        "model.decoder.layers.0.fc1", "model.decoder.layers.0.fc2"]
     ordered_init_modules = []
     for l in range(gold_model.config.num_hidden_layers):
         tmp = []
