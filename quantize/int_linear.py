@@ -158,7 +158,6 @@ class QuantLinear(nn.Module):
             self.register_buffer('bias', org_module.base_layer.bias)
         else:
             self.bias = None
-        print(self.bias)
 
         self.lora_A_weight = org_module.lora_A.default.weight
         self.lora_B_weight = org_module.lora_B.default.weight
